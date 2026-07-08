@@ -1,9 +1,11 @@
-const APP_VERSION = "1.0.1";
+const APP_VERSION = "1.0.3";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
 let supabaseClient = null;
 let allItems = [];
+let selectedImageFile = null;
+let selectedPreviewUrl = null;
 
 const $ = (id) => document.getElementById(id);
 
@@ -33,6 +35,7 @@ function clearForm(){
   ["productName","boxNo","shelfLocation","quantity","vehicleBrand","vehicleModel","vehicleYear","screenInchFrame","mediaBrand","ram","storage","screenInchMedia","note"].forEach(id => {
     if($(id)) $(id).value = id === "quantity" ? 1 : "";
   });
+  clearSelectedImage();
 }
 
 function itemHtml(item){
@@ -42,6 +45,7 @@ function itemHtml(item){
     : `${item.media_brand || ""} • RAM: ${item.ram || "-"} • Hafıza: ${item.storage || "-"} • ${item.screen_inch || ""}"`;
 
   return `<div class="item">
+    ${item.image_url ? `<img class="productImg" src="${item.image_url}" alt="${item.product_name || "Ürün resmi"}" loading="lazy" onclick="openImageModal('${item.image_url}')" />` : ""}
     <div class="itemHead">
       <div>
         <h3>${item.product_name || "İsimsiz Ürün"}</h3>
@@ -107,9 +111,112 @@ function renderBoxes(filterBox = ""){
   $("boxList").innerHTML = html || `<p class="muted">Koli bulunamadı.</p>`;
 }
 
+
+
+function setSelectedImage(file){
+  if(!file) return;
+
+  selectedImageFile = file;
+
+  if(selectedPreviewUrl){
+    URL.revokeObjectURL(selectedPreviewUrl);
+  }
+
+  selectedPreviewUrl = URL.createObjectURL(file);
+  $("imagePreview").src = selectedPreviewUrl;
+  $("imagePreviewWrap").classList.remove("hidden");
+}
+
+function clearSelectedImage(){
+  selectedImageFile = null;
+
+  if(selectedPreviewUrl){
+    URL.revokeObjectURL(selectedPreviewUrl);
+    selectedPreviewUrl = null;
+  }
+
+  if($("imagePreview")) $("imagePreview").src = "";
+  if($("imagePreviewWrap")) $("imagePreviewWrap").classList.add("hidden");
+  if($("productImageCamera")) $("productImageCamera").value = "";
+  if($("productImageGallery")) $("productImageGallery").value = "";
+}
+
+async function compressImage(file, maxSize = 1600, quality = 0.78){
+  const bitmap = await createImageBitmap(file);
+
+  let width = bitmap.width;
+  let height = bitmap.height;
+
+  if(width > height && width > maxSize){
+    height = Math.round(height * (maxSize / width));
+    width = maxSize;
+  }else if(height >= width && height > maxSize){
+    width = Math.round(width * (maxSize / height));
+    height = maxSize;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(bitmap, 0, 0, width, height);
+
+  return await new Promise((resolve) => {
+    canvas.toBlob((blob) => {
+      if(!blob){
+        resolve(file);
+        return;
+      }
+
+      const compressed = new File(
+        [blob],
+        `urun-${Date.now()}.webp`,
+        { type: "image/webp" }
+      );
+
+      resolve(compressed);
+    }, "image/webp", quality);
+  });
+}
+
+async function uploadProductImage(){
+  if(!selectedImageFile) return null;
+
+  const compressedFile = await compressImage(selectedImageFile);
+  const path = `urunler/${Date.now()}-${Math.random().toString(36).slice(2)}.webp`;
+
+  const { error: uploadError } = await supabaseClient.storage
+    .from("depo-resimler")
+    .upload(path, compressedFile, {
+      cacheControl: "3600",
+      upsert: false,
+      contentType: "image/webp"
+    });
+
+  if(uploadError){
+    throw new Error("Resim yüklenemedi: " + uploadError.message);
+  }
+
+  const { data } = supabaseClient.storage
+    .from("depo-resimler")
+    .getPublicUrl(path);
+
+  return data.publicUrl;
+}
+
+
 async function saveItem(){
   if(!supabaseClient){ toast("Önce Supabase ayarlarını gir knk."); return; }
   const type = $("productType").value;
+
+  let imageUrl = null;
+  try{
+    imageUrl = await uploadProductImage();
+  }catch(err){
+    toast(err.message);
+    return;
+  }
 
   const row = {
     product_type: type,
@@ -125,6 +232,7 @@ async function saveItem(){
     ram: type === "multimedya" ? $("ram").value.trim() : null,
     storage: type === "multimedya" ? $("storage").value.trim() : null,
     screen_inch: type === "cerceve" ? $("screenInchFrame").value.trim() : $("screenInchMedia").value.trim(),
+    image_url: imageUrl,
     note: $("note").value.trim()
   };
 
@@ -174,6 +282,16 @@ function doSearch(){
   renderList(list);
 }
 
+function openImageModal(url){
+  $("modalImage").src = url;
+  $("imageModal").classList.remove("hidden");
+}
+
+function closeImageModal(){
+  $("imageModal").classList.add("hidden");
+  $("modalImage").src = "";
+}
+
 function setupEvents(){
   document.querySelectorAll(".tab").forEach(btn => {
     btn.addEventListener("click", () => {
@@ -188,6 +306,18 @@ function setupEvents(){
     const isFrame = $("productType").value === "cerceve";
     $("frameFields").classList.toggle("hidden", !isFrame);
     $("mediaFields").classList.toggle("hidden", isFrame);
+  });
+
+  $("btnCamera").addEventListener("click", () => $("productImageCamera").click());
+  $("btnGallery").addEventListener("click", () => $("productImageGallery").click());
+
+  $("productImageCamera").addEventListener("change", (e) => setSelectedImage(e.target.files[0]));
+  $("productImageGallery").addEventListener("change", (e) => setSelectedImage(e.target.files[0]));
+  $("btnRemoveImage").addEventListener("click", clearSelectedImage);
+
+  $("btnCloseImageModal").addEventListener("click", closeImageModal);
+  $("imageModal").addEventListener("click", (e) => {
+    if(e.target.id === "imageModal") closeImageModal();
   });
 
   $("btnSave").addEventListener("click", saveItem);

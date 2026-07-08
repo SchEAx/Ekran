@@ -62,6 +62,19 @@
           <label>Adet
             <input id="quantity" type="number" min="0" value="1" />
           </label>
+          <div class="imagePick">
+            <span>Ürün Resmi</span>
+            <div class="imageActions">
+              <button type="button" id="btnCamera">📸 Kamera</button>
+              <button type="button" id="btnGallery">🖼️ Galeri</button>
+            </div>
+            <input id="productImageCamera" class="hidden" type="file" accept="image/*" capture="environment" />
+            <input id="productImageGallery" class="hidden" type="file" accept="image/*" />
+            <div id="imagePreviewWrap" class="previewWrap hidden">
+              <img id="imagePreview" alt="Seçilen ürün resmi" />
+              <button type="button" id="btnRemoveImage">Resmi Kaldır</button>
+            </div>
+          </div>
         </div>
 
         <div id="frameFields" class="subcard">
@@ -151,6 +164,11 @@
 
   <button id="updateBtn" class="update hidden">Güncelle</button>
   <div id="toast" class="toast hidden"></div>
+
+  <div id="imageModal" class="imageModal hidden">
+    <button id="btnCloseImageModal">×</button>
+    <img id="modalImage" alt="Ürün resmi" />
+  </div>
 
   <script src="app.js"></script>
 </body>
