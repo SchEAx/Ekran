@@ -1,4 +1,6 @@
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
+const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
 let supabaseClient = null;
 let allItems = [];
@@ -12,10 +14,15 @@ function toast(msg){
 }
 
 function initSupabase(){
-  const url = localStorage.getItem("koli_supabase_url") || "";
-  const key = localStorage.getItem("koli_supabase_key") || "";
+  const savedUrl = localStorage.getItem("koli_supabase_url") || "";
+  const savedKey = localStorage.getItem("koli_supabase_key") || "";
+
+  const url = savedUrl || SUPABASE_URL;
+  const key = savedKey || SUPABASE_ANON_KEY;
+
   $("supabaseUrl").value = url;
   $("supabaseKey").value = key;
+
   if(url && key && window.supabase){
     supabaseClient = window.supabase.createClient(url, key);
     loadAll();
