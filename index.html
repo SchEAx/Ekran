@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Koli Depo Yönetimi</title>
+  <meta name="theme-color" content="#111827" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <h1>📦 Koli Depo</h1>
+      <p>Çerçeve & Multimedya stok sistemi</p>
+    </div>
+    <div class="powered">Powered by <b>SchEAx & GPT</b></div>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <div class="searchbox">
+        <input id="searchInput" placeholder="Ürün, araç modeli, koli no, marka ara..." autocomplete="off" />
+        <button id="btnSearch">Ara</button>
+      </div>
+      <div class="quickstats">
+        <div><b id="statTotal">0</b><span>Toplam Ürün</span></div>
+        <div><b id="statBoxes">0</b><span>Koli</span></div>
+        <div><b id="statFrame">0</b><span>Çerçeve</span></div>
+        <div><b id="statMedia">0</b><span>Multimedya</span></div>
+      </div>
+    </section>
+
+    <nav class="tabs">
+      <button class="tab active" data-tab="urun">Ürün Ekle</button>
+      <button class="tab" data-tab="liste">Stok Listesi</button>
+      <button class="tab" data-tab="koli">Koli Yönetimi</button>
+      <button class="tab" data-tab="odeme">Ödemeler</button>
+      <button class="tab" data-tab="ayar">Ayarlar</button>
+    </nav>
+
+    <section id="tab-urun" class="panel active">
+      <div class="card">
+        <h2>Yeni Stok Kaydı</h2>
+        <div class="grid">
+          <label>Ürün Tipi
+            <select id="productType">
+              <option value="cerceve">Çerçeve</option>
+              <option value="multimedya">Multimedya</option>
+            </select>
+          </label>
+          <label>Ürün Adı
+            <input id="productName" placeholder="Örn: Fiesta 9 inç çerçeve" />
+          </label>
+          <label>Koli No
+            <input id="boxNo" placeholder="K-001" />
+          </label>
+          <label>Raf Konumu
+            <input id="shelfLocation" placeholder="A-02 / Üst Raf" />
+          </label>
+          <label>Adet
+            <input id="quantity" type="number" min="0" value="1" />
+          </label>
+        </div>
+
+        <div id="frameFields" class="subcard">
+          <h3>Çerçeve Bilgileri</h3>
+          <div class="grid">
+            <label>Araç Markası <input id="vehicleBrand" placeholder="Ford" /></label>
+            <label>Araç Modeli <input id="vehicleModel" placeholder="Fiesta" /></label>
+            <label>Model Yılı <input id="vehicleYear" placeholder="2009-2017" /></label>
+            <label>Ekran İnç <input id="screenInchFrame" placeholder="9" /></label>
+            <label>Soket
+              <select id="socketIncluded">
+                <option value="var">Var</option>
+                <option value="yok">Yok</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <div id="mediaFields" class="subcard hidden">
+          <h3>Multimedya Bilgileri</h3>
+          <div class="grid">
+            <label>Marka <input id="mediaBrand" placeholder="Navimex / For-X / Cyclone" /></label>
+            <label>RAM <input id="ram" placeholder="4 GB" /></label>
+            <label>Hafıza <input id="storage" placeholder="64 GB" /></label>
+            <label>İnç <input id="screenInchMedia" placeholder="9" /></label>
+          </div>
+        </div>
+
+        <label>Not
+          <textarea id="note" placeholder="Ek açıklama..."></textarea>
+        </label>
+
+        <div class="actions">
+          <button id="btnSave" class="primary">Kaydet</button>
+          <button id="btnClear">Temizle</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-liste" class="panel">
+      <div class="card">
+        <h2>Stok Listesi</h2>
+        <div id="stockList" class="list"></div>
+      </div>
+    </section>
+
+    <section id="tab-koli" class="panel">
+      <div class="card">
+        <h2>Koli Yönetimi</h2>
+        <div class="grid">
+          <label>Koli No <input id="boxSearch" placeholder="K-001" /></label>
+          <button id="btnBoxSearch">Koli İçeriğini Göster</button>
+        </div>
+        <div id="boxList" class="list"></div>
+      </div>
+    </section>
+
+    <section id="tab-odeme" class="panel">
+      <div class="card">
+        <h2>Ödeme Kaydı</h2>
+        <div class="grid">
+          <label>Firma / Kişi <input id="payerName" placeholder="Tedarikçi veya müşteri" /></label>
+          <label>Tutar <input id="paymentAmount" type="number" min="0" step="0.01" /></label>
+          <label>Tür
+            <select id="paymentType">
+              <option value="giris">Giriş</option>
+              <option value="cikis">Çıkış</option>
+            </select>
+          </label>
+          <label>Açıklama <input id="paymentNote" placeholder="Ödeme açıklaması" /></label>
+        </div>
+        <button id="btnPayment" class="primary">Ödemeyi Kaydet</button>
+        <div id="paymentList" class="list"></div>
+      </div>
+    </section>
+
+    <section id="tab-ayar" class="panel">
+      <div class="card">
+        <h2>Supabase Ayarları</h2>
+        <p class="muted">Aşağıdaki bilgileri bir kere girince tarayıcıya kaydeder. İstersen app.js içine sabitleyebiliriz.</p>
+        <label>Supabase URL <input id="supabaseUrl" placeholder="https://xxxxx.supabase.co" /></label>
+        <label>Anon Key <textarea id="supabaseKey" placeholder="eyJ..."></textarea></label>
+        <button id="btnConfig" class="primary">Ayarları Kaydet</button>
+      </div>
+    </section>
+  </main>
+
+  <button id="updateBtn" class="update hidden">Güncelle</button>
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
