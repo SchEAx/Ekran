@@ -59,9 +59,17 @@
           <label>Raf Konumu
             <input id="shelfLocation" placeholder="A-02 / Üst Raf" />
           </label>
-          <label>Adet
+          <label id="generalQuantityWrap">Adet
             <input id="quantity" type="number" min="0" value="1" />
           </label>
+          <div id="frameStockWrap" class="frameStockBox">
+            <span>Çerçeve Stok Dağılımı</span>
+            <div class="grid twoCols">
+              <label>Soketli Adet<input id="socketQuantity" type="number" min="0" placeholder="0" /></label>
+              <label>Soketsiz Adet<input id="noSocketQuantity" type="number" min="0" placeholder="0" /></label>
+            </div>
+            <small>İkisi de zorunlu değil. Girilen adetler toplam stoğu oluşturur.</small>
+          </div>
           <div class="imagePick">
             <span>Ürün Resmi</span>
             <div class="imageActions">
@@ -169,7 +177,18 @@
     <button id="btnCloseImageModal">×</button>
     <img id="modalImage" alt="Ürün resmi" />
   </div>
-
+  <div id="editModal" class="editModal hidden">
+    <div class="editCard">
+      <div class="itemHead"><h2>Stok Düzenle</h2><button type="button" id="btnCloseEdit">×</button></div>
+      <input id="editId" type="hidden" />
+      <label>Ürün Adı<input id="editProductName" /></label>
+      <div class="grid"><label>Koli No<input id="editBoxNo" /></label><label>Raf Konumu<input id="editShelfLocation" /></label></div>
+      <div id="editFrameStock" class="subcard hidden"><div class="grid twoCols"><label>Soketli Stok<input id="editSocketQuantity" type="number" min="0" /></label><label>Soketsiz Stok<input id="editNoSocketQuantity" type="number" min="0" /></label></div></div>
+      <div id="editGeneralStock" class="subcard hidden"><label>Toplam Stok<input id="editQuantity" type="number" min="0" /></label></div>
+      <label>Not<textarea id="editNote"></textarea></label>
+      <div class="actions"><button type="button" id="btnSaveEdit" class="primary">Değişiklikleri Kaydet</button><button type="button" id="btnDeleteItem" class="danger">Ürünü Sil</button></div>
+    </div>
+  </div>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.3";
+const APP_VERSION = "1.0.4";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -32,7 +32,7 @@ function initSupabase(){
 }
 
 function clearForm(){
-  ["productName","boxNo","shelfLocation","quantity","vehicleBrand","vehicleModel","vehicleYear","screenInchFrame","mediaBrand","ram","storage","screenInchMedia","note"].forEach(id => {
+  ["productName","boxNo","shelfLocation","quantity","socketQuantity","noSocketQuantity","vehicleBrand","vehicleModel","vehicleYear","screenInchFrame","mediaBrand","ram","storage","screenInchMedia","note"].forEach(id => {
     if($(id)) $(id).value = id === "quantity" ? 1 : "";
   });
   clearSelectedImage();
@@ -40,26 +40,12 @@ function clearForm(){
 
 function itemHtml(item){
   const typeLabel = item.product_type === "cerceve" ? "Çerçeve" : "Multimedya";
-  const extra = item.product_type === "cerceve"
-    ? `${item.vehicle_brand || ""} ${item.vehicle_model || ""} ${item.vehicle_year || ""} • ${item.screen_inch || ""}" • Soket: ${item.socket_included || "-"}`
-    : `${item.media_brand || ""} • RAM: ${item.ram || "-"} • Hafıza: ${item.storage || "-"} • ${item.screen_inch || ""}"`;
-
-  return `<div class="item">
-    ${item.image_url ? `<img class="productImg" src="${item.image_url}" alt="${item.product_name || "Ürün resmi"}" loading="lazy" onclick="openImageModal('${item.image_url}')" />` : ""}
-    <div class="itemHead">
-      <div>
-        <h3>${item.product_name || "İsimsiz Ürün"}</h3>
-        <p class="muted">${extra}</p>
-      </div>
-      <b>${item.quantity || 0} adet</b>
-    </div>
-    <div style="margin-top:8px">
-      <span class="badge">${typeLabel}</span>
-      <span class="badge">Koli: ${item.box_no || "-"}</span>
-      <span class="badge">Raf: ${item.shelf_location || "-"}</span>
-    </div>
-    ${item.note ? `<p style="margin-top:8px">${item.note}</p>` : ""}
-  </div>`;
+  const socketQty = Number(item.socket_quantity || 0);
+  const noSocketQty = Number(item.no_socket_quantity || 0);
+  const totalQty = item.product_type === "cerceve" ? socketQty + noSocketQty : Number(item.quantity || 0);
+  const extra = item.product_type === "cerceve" ? `${item.vehicle_brand || ""} ${item.vehicle_model || ""} ${item.vehicle_year || ""} • ${item.screen_inch || ""}"` : `${item.media_brand || ""} • RAM: ${item.ram || "-"} • Hafıza: ${item.storage || "-"} • ${item.screen_inch || ""}"`;
+  const stockBadges = item.product_type === "cerceve" ? `<span class="badge">Soketli: ${socketQty}</span><span class="badge">Soketsiz: ${noSocketQty}</span><span class="badge">Toplam: ${totalQty}</span>` : `<span class="badge">Stok: ${totalQty}</span>`;
+  return `<div class="item">${item.image_url ? `<img class="productImg" src="${item.image_url}" alt="${item.product_name || "Ürün resmi"}" loading="lazy" onclick="openImageModal('${item.image_url}')" />` : ""}<div class="itemHead"><div><h3>${item.product_name || "İsimsiz Ürün"}</h3><p class="muted">${extra}</p></div><b>${totalQty} adet</b></div><div style="margin-top:8px"><span class="badge">${typeLabel}</span><span class="badge">Koli: ${item.box_no || "-"}</span><span class="badge">Raf: ${item.shelf_location || "-"}</span>${stockBadges}</div>${item.note ? `<p style="margin-top:8px">${item.note}</p>` : ""}<div class="stockActions"><button type="button" onclick="adjustStock('${item.id}',1)">+ Stok Ekle</button><button type="button" onclick="adjustStock('${item.id}',-1)">− Stok Çıkar</button><button type="button" onclick="openEditModal('${item.id}')">Düzenle</button></div></div>`;
 }
 
 async function loadAll(){
@@ -78,10 +64,11 @@ async function loadAll(){
 }
 
 function renderStats(){
-  $("statTotal").textContent = allItems.reduce((a,b)=>a + Number(b.quantity || 0),0);
+  const itemTotal = item => item.product_type === "cerceve" ? Number(item.socket_quantity||0)+Number(item.no_socket_quantity||0) : Number(item.quantity||0);
+  $("statTotal").textContent = allItems.reduce((a,b)=>a+itemTotal(b),0);
   $("statBoxes").textContent = new Set(allItems.map(x=>x.box_no).filter(Boolean)).size;
-  $("statFrame").textContent = allItems.filter(x=>x.product_type==="cerceve").reduce((a,b)=>a+Number(b.quantity||0),0);
-  $("statMedia").textContent = allItems.filter(x=>x.product_type==="multimedya").reduce((a,b)=>a+Number(b.quantity||0),0);
+  $("statFrame").textContent = allItems.filter(x=>x.product_type==="cerceve").reduce((a,b)=>a+itemTotal(b),0);
+  $("statMedia").textContent = allItems.filter(x=>x.product_type==="multimedya").reduce((a,b)=>a+itemTotal(b),0);
 }
 
 function renderList(list){
@@ -223,7 +210,9 @@ async function saveItem(){
     product_name: $("productName").value.trim(),
     box_no: $("boxNo").value.trim().toUpperCase(),
     shelf_location: $("shelfLocation").value.trim(),
-    quantity: Number($("quantity").value || 0),
+    quantity: type === "cerceve" ? Number($("socketQuantity").value||0)+Number($("noSocketQuantity").value||0) : Number($("quantity").value||0),
+    socket_quantity: type === "cerceve" ? Number($("socketQuantity").value||0) : 0,
+    no_socket_quantity: type === "cerceve" ? Number($("noSocketQuantity").value||0) : 0,
     vehicle_brand: type === "cerceve" ? $("vehicleBrand").value.trim() : null,
     vehicle_model: type === "cerceve" ? $("vehicleModel").value.trim() : null,
     vehicle_year: type === "cerceve" ? $("vehicleYear").value.trim() : null,
@@ -282,6 +271,37 @@ function doSearch(){
   renderList(list);
 }
 
+
+async function adjustStock(id,direction){
+  const item=allItems.find(x=>x.id===id); if(!item)return;
+  const amount=Number(prompt(direction>0?"Kaç adet eklensin?":"Kaç adet çıkarılsın?")); if(!Number.isFinite(amount)||amount<=0)return;
+  let updates={};
+  if(item.product_type==="cerceve"){
+    const t=prompt("Hangi stok?\n1 = Soketli\n2 = Soketsiz"); if(t!=="1"&&t!=="2")return;
+    const field=t==="1"?"socket_quantity":"no_socket_quantity";
+    const current=Number(item[field]||0); const next=direction>0?current+amount:Math.max(0,current-amount);
+    updates[field]=next; updates.quantity=(field==="socket_quantity"?next+Number(item.no_socket_quantity||0):Number(item.socket_quantity||0)+next);
+  }else{
+    const current=Number(item.quantity||0); updates.quantity=direction>0?current+amount:Math.max(0,current-amount);
+  }
+  const {error}=await supabaseClient.from("depo_items").update(updates).eq("id",id); if(error){toast("Stok güncellenemedi: "+error.message);return;}
+  toast(direction>0?"Stok eklendi.":"Stok çıkarıldı."); loadAll();
+}
+function openEditModal(id){
+  const item=allItems.find(x=>x.id===id); if(!item)return;
+  $("editId").value=item.id; $("editProductName").value=item.product_name||""; $("editBoxNo").value=item.box_no||""; $("editShelfLocation").value=item.shelf_location||""; $("editNote").value=item.note||"";
+  const isFrame=item.product_type==="cerceve"; $("editFrameStock").classList.toggle("hidden",!isFrame); $("editGeneralStock").classList.toggle("hidden",isFrame);
+  $("editSocketQuantity").value=Number(item.socket_quantity||0); $("editNoSocketQuantity").value=Number(item.no_socket_quantity||0); $("editQuantity").value=Number(item.quantity||0); $("editModal").classList.remove("hidden");
+}
+function closeEditModal(){ $("editModal").classList.add("hidden"); }
+async function saveEdit(){
+ const id=$("editId").value,item=allItems.find(x=>x.id===id); if(!item)return;
+ const updates={product_name:$("editProductName").value.trim(),box_no:$("editBoxNo").value.trim().toUpperCase(),shelf_location:$("editShelfLocation").value.trim(),note:$("editNote").value.trim()};
+ if(item.product_type==="cerceve"){const s=Number($("editSocketQuantity").value||0),n=Number($("editNoSocketQuantity").value||0);updates.socket_quantity=s;updates.no_socket_quantity=n;updates.quantity=s+n;}else updates.quantity=Number($("editQuantity").value||0);
+ const {error}=await supabaseClient.from("depo_items").update(updates).eq("id",id); if(error){toast("Düzenleme kaydedilemedi: "+error.message);return;} closeEditModal();toast("Ürün güncellendi.");loadAll();
+}
+async function deleteItem(){const id=$("editId").value,item=allItems.find(x=>x.id===id);if(!item||!confirm(`"${item.product_name}" tamamen silinsin mi?`))return;const {error}=await supabaseClient.from("depo_items").delete().eq("id",id);if(error){toast("Ürün silinemedi: "+error.message);return;}closeEditModal();toast("Ürün silindi.");loadAll();}
+
 function openImageModal(url){
   $("modalImage").src = url;
   $("imageModal").classList.remove("hidden");
@@ -302,11 +322,8 @@ function setupEvents(){
     });
   });
 
-  $("productType").addEventListener("change", () => {
-    const isFrame = $("productType").value === "cerceve";
-    $("frameFields").classList.toggle("hidden", !isFrame);
-    $("mediaFields").classList.toggle("hidden", isFrame);
-  });
+  const syncTypeFields=()=>{const isFrame=$("productType").value==="cerceve";$("frameFields").classList.toggle("hidden",!isFrame);$("mediaFields").classList.toggle("hidden",isFrame);$("frameStockWrap").classList.toggle("hidden",!isFrame);$("generalQuantityWrap").classList.toggle("hidden",isFrame);};
+  $("productType").addEventListener("change",syncTypeFields); syncTypeFields();
 
   $("btnCamera").addEventListener("click", () => $("productImageCamera").click());
   $("btnGallery").addEventListener("click", () => $("productImageGallery").click());
@@ -316,9 +333,8 @@ function setupEvents(){
   $("btnRemoveImage").addEventListener("click", clearSelectedImage);
 
   $("btnCloseImageModal").addEventListener("click", closeImageModal);
-  $("imageModal").addEventListener("click", (e) => {
-    if(e.target.id === "imageModal") closeImageModal();
-  });
+  $("imageModal").addEventListener("click", (e) => { if(e.target.id === "imageModal") closeImageModal(); });
+  $("btnCloseEdit").addEventListener("click",closeEditModal); $("btnSaveEdit").addEventListener("click",saveEdit); $("btnDeleteItem").addEventListener("click",deleteItem); $("editModal").addEventListener("click",e=>{if(e.target.id==="editModal")closeEditModal();});
 
   $("btnSave").addEventListener("click", saveItem);
   $("btnClear").addEventListener("click", clearForm);
