@@ -7,6 +7,9 @@
   <meta name="theme-color" content="#111827" />
   <link rel="manifest" href="manifest.json" />
   <link rel="stylesheet" href="style.css" />
+  <script>
+    document.documentElement.dataset.theme = localStorage.getItem("koli_theme") || "midnight";
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -34,6 +37,7 @@
 
     <nav class="tabs">
       <button class="tab active" data-tab="urun">Ürün Ekle</button>
+      <button class="tab" data-tab="islem">Stok Giriş / Çıkış</button>
       <button class="tab" data-tab="liste">Stok Listesi</button>
       <button class="tab" data-tab="koli">Koli Yönetimi</button>
       <button class="tab" data-tab="odeme">Ödemeler</button>
@@ -122,6 +126,26 @@
       </div>
     </section>
 
+    <section id="tab-islem" class="panel">
+      <div class="card">
+        <h2>Stok Giriş / Çıkış</h2>
+        <p class="muted sectionHint">Ürünü bul, giriş veya çıkış seç ve adedi gir. Çerçevelerde soketli/soketsiz stok ayrı güncellenir.</p>
+        <div class="grid operationFilters">
+          <label>Ürün Ara
+            <input id="operationSearch" placeholder="Ürün, araç, koli no veya raf ara..." autocomplete="off" />
+          </label>
+          <label>Ürün Tipi
+            <select id="operationTypeFilter">
+              <option value="tum">Tümü</option>
+              <option value="cerceve">Çerçeve</option>
+              <option value="multimedya">Multimedya</option>
+            </select>
+          </label>
+        </div>
+        <div id="operationList" class="list"></div>
+      </div>
+    </section>
+
     <section id="tab-liste" class="panel">
       <div class="card">
         <h2>Stok Listesi</h2>
@@ -160,12 +184,26 @@
     </section>
 
     <section id="tab-ayar" class="panel">
-      <div class="card">
-        <h2>Supabase Ayarları</h2>
-        <p class="muted">Aşağıdaki bilgileri bir kere girince tarayıcıya kaydeder. İstersen app.js içine sabitleyebiliriz.</p>
-        <label>Supabase URL <input id="supabaseUrl" placeholder="https://xxxxx.supabase.co" /></label>
-        <label>Anon Key <textarea id="supabaseKey" placeholder="eyJ..."></textarea></label>
-        <button id="btnConfig" class="primary">Ayarları Kaydet</button>
+      <div class="settingsGrid">
+        <div class="card">
+          <h2>Tema Renkleri</h2>
+          <p class="muted sectionHint">Seçtiğin tema bu cihazda kayıtlı kalır.</p>
+          <div class="themeGrid" id="themeGrid">
+            <button type="button" class="themeChoice" data-theme-choice="midnight"><span class="themeSwatch swatchMidnight"></span><span><b>Turuncu Gece</b><small>Koyu ve sıcak</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="ocean"><span class="themeSwatch swatchOcean"></span><span><b>Okyanus</b><small>Mavi tonlar</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="forest"><span class="themeSwatch swatchForest"></span><span><b>Orman</b><small>Yeşil tonlar</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="violet"><span class="themeSwatch swatchViolet"></span><span><b>Mor Gece</b><small>Mor ve pembe</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="graphite"><span class="themeSwatch swatchGraphite"></span><span><b>Grafit</b><small>Sade gri</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="light"><span class="themeSwatch swatchLight"></span><span><b>Aydınlık</b><small>Açık tema</small></span></button>
+          </div>
+        </div>
+        <div class="card">
+          <h2>Supabase Ayarları</h2>
+          <p class="muted sectionHint">Aşağıdaki bilgiler bir kere girildiğinde bu tarayıcıya kaydedilir.</p>
+          <label>Supabase URL <input id="supabaseUrl" placeholder="https://xxxxx.supabase.co" /></label>
+          <label>Anon Key <textarea id="supabaseKey" placeholder="eyJ..."></textarea></label>
+          <button id="btnConfig" class="primary">Bağlantı Ayarlarını Kaydet</button>
+        </div>
       </div>
     </section>
   </main>
@@ -185,8 +223,37 @@
       <div class="grid"><label>Koli No<input id="editBoxNo" /></label><label>Raf Konumu<input id="editShelfLocation" /></label></div>
       <div id="editFrameStock" class="subcard hidden"><div class="grid twoCols"><label>Soketli Stok<input id="editSocketQuantity" type="number" min="0" /></label><label>Soketsiz Stok<input id="editNoSocketQuantity" type="number" min="0" /></label></div></div>
       <div id="editGeneralStock" class="subcard hidden"><label>Toplam Stok<input id="editQuantity" type="number" min="0" /></label></div>
+      <div class="imagePick editImagePick">
+        <span>Ürün Resmi</span>
+        <div class="imageActions">
+          <button type="button" id="btnEditCamera">📸 Kameradan Değiştir</button>
+          <button type="button" id="btnEditGallery">🖼️ Galeriden Değiştir</button>
+        </div>
+        <input id="editProductImageCamera" class="hidden" type="file" accept="image/*" capture="environment" />
+        <input id="editProductImageGallery" class="hidden" type="file" accept="image/*" />
+        <div id="editImagePreviewWrap" class="previewWrap hidden">
+          <img id="editImagePreview" alt="Ürün resmi ön izlemesi" />
+          <button type="button" id="btnRemoveEditImage">Resmi Kaldır</button>
+        </div>
+      </div>
       <label>Not<textarea id="editNote"></textarea></label>
       <div class="actions"><button type="button" id="btnSaveEdit" class="primary">Değişiklikleri Kaydet</button><button type="button" id="btnDeleteItem" class="danger">Ürünü Sil</button></div>
+    </div>
+  </div>
+  <div id="operationModal" class="editModal hidden">
+    <div class="editCard operationCard">
+      <div class="itemHead"><div><h2 id="operationTitle">Stok İşlemi</h2><p id="operationProductInfo" class="muted"></p></div><button type="button" id="btnCloseOperation">×</button></div>
+      <input id="operationItemId" type="hidden" />
+      <input id="operationDirection" type="hidden" />
+      <div id="operationCurrentStock" class="currentStock"></div>
+      <label id="operationFrameTypeWrap" class="hidden">Stok Türü
+        <select id="operationFrameType">
+          <option value="socket_quantity">Soketli</option>
+          <option value="no_socket_quantity">Soketsiz</option>
+        </select>
+      </label>
+      <label>Adet<input id="operationAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
+      <div class="actions"><button type="button" id="btnConfirmOperation" class="primary">İşlemi Kaydet</button><button type="button" id="btnCancelOperation">Vazgeç</button></div>
     </div>
   </div>
   <script src="app.js"></script>
