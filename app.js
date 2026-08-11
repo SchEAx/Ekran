@@ -1,4 +1,4 @@
-const APP_VERSION = "2.2.1";
+const APP_VERSION = "2.3.1";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -35,7 +35,7 @@ const I18N = {
     languageTitle:"Dil / اللغة", languageHint:"Uygulama dilini seç. Seçim bu cihazda kayıtlı kalır.", themeColors:"Tema Renkleri", themeHint:"Seçtiğin tema bu cihazda kayıtlı kalır.", update:"Güncelle",
     themeMidnight:"Turuncu Gece", themeOcean:"Okyanus", themeForest:"Orman", themeViolet:"Mor Gece", themeGraphite:"Grafit", themeLight:"Aydınlık", themeDarkWarm:"Koyu ve sıcak", themeBlue:"Mavi tonlar", themeGreen:"Yeşil tonlar", themePurple:"Mor ve pembe", themeGray:"Sade gri", themeOpen:"Açık tema",
     stockType:"Stok Türü", withSocket:"Soketli", withoutSocket:"Soketsiz", quantity:"Adet", operationNote:"İşlem Notu (isteğe bağlı)", operationNotePlaceholder:"Örn: Montaj için alındı", saveOperation:"İşlemi Kaydet", cancel:"Vazgeç",
-    personnelLogin:"👋 Personel Girişi", personnelLoginHint:"Adını bir kez kaydetmen yeterli. Sonraki açılışlarda adın hazır gelecek; devam dediğinde stok işlemleri senin adına tutulacak.", fullName:"Ad Soyad", namePlaceholder:"Örn: Ahmet Yılmaz", continueAsPersonnel:"Personel Olarak Devam Et",
+    personnelLogin:"👋 Personel Girişi", personnelLoginHint:"Adını ve kişisel PIN’ini gir. İlk kayıtta bu PIN hesabına tanımlanır; sonraki girişlerde aynı PIN kullanılır.", fullName:"Ad Soyad", namePlaceholder:"Örn: Ahmet Yılmaz", personnelPin:"Personel PIN", pinPlaceholder:"En az 4 hane", continueAsPersonnel:"Personel Olarak Devam Et",
     showBarcode:"Barkodu Kameraya Göster", holdBarcode:"Barkodu çerçevenin ortasında tut.", cameraPreparing:"Kamera hazırlanıyor...", holdStill:"Barkodu çerçevenin ortasında sabit tut.",
     box:"Koli", shelf:"Raf", total:"Toplam", stock:"Stok", currentStock:"Mevcut stok", stockIn:"+ Stok Girişi", stockOut:"− Stok Çıkışı", edit:"Düzenle",
     stockInTitle:"Stok Girişi", stockOutTitle:"Stok Çıkışı", saveStockIn:"Stok Girişini Kaydet", saveStockOut:"Stok Çıkışını Kaydet",
@@ -56,7 +56,7 @@ const I18N = {
     languageTitle:"اللغة / Dil", languageHint:"اختر لغة التطبيق. سيبقى الاختيار محفوظاً على هذا الجهاز.", themeColors:"ألوان الواجهة", themeHint:"اللون الذي تختاره سيبقى محفوظاً على هذا الجهاز.", update:"تحديث",
     themeMidnight:"ليلي برتقالي", themeOcean:"المحيط", themeForest:"الغابة", themeViolet:"ليلي بنفسجي", themeGraphite:"رمادي داكن", themeLight:"فاتح", themeDarkWarm:"داكن ودافئ", themeBlue:"درجات الأزرق", themeGreen:"درجات الأخضر", themePurple:"بنفسجي ووردي", themeGray:"رمادي بسيط", themeOpen:"واجهة فاتحة",
     stockType:"نوع المخزون", withSocket:"مع مقبس", withoutSocket:"بدون مقبس", quantity:"الكمية", operationNote:"ملاحظة العملية (اختياري)", operationNotePlaceholder:"مثال: أُخذ للتركيب", saveOperation:"حفظ العملية", cancel:"إلغاء",
-    personnelLogin:"👋 دخول الموظف", personnelLoginHint:"يكفي تسجيل اسمك مرة واحدة. في المرات القادمة سيظهر اسمك جاهزاً، وستُسجل حركات المخزون باسمك.", fullName:"الاسم الكامل", namePlaceholder:"مثال: أحمد محمد", continueAsPersonnel:"المتابعة كموظف",
+    personnelLogin:"👋 دخول الموظف", personnelLoginHint:"أدخل اسمك ورقمك السري الشخصي. في التسجيل الأول يُربط الرقم بحسابك، ثم تستخدمه في كل دخول.", fullName:"الاسم الكامل", namePlaceholder:"مثال: أحمد محمد", personnelPin:"رقم الموظف السري", pinPlaceholder:"4 أرقام على الأقل", continueAsPersonnel:"المتابعة كموظف",
     showBarcode:"وجّه الباركود نحو الكاميرا", holdBarcode:"ضع الباركود في منتصف الإطار.", cameraPreparing:"جارٍ تشغيل الكاميرا...", holdStill:"ثبّت الباركود في منتصف الإطار.",
     box:"الصندوق", shelf:"الرف", total:"المجموع", stock:"المخزون", currentStock:"المخزون الحالي", stockIn:"+ إدخال مخزون", stockOut:"− إخراج مخزون", edit:"تعديل",
     stockInTitle:"إدخال مخزون", stockOutTitle:"إخراج مخزون", saveStockIn:"حفظ إدخال المخزون", saveStockOut:"حفظ إخراج المخزون",
@@ -77,17 +77,20 @@ let selectedEditPreviewUrl = null;
 let editImageRemoved = false;
 let toastTimer = null;
 let currentPersonnelName = "";
+let currentPersonnelPin = "";
 let currentDeviceId = "";
 let adminUnlocked = false;
 let adminPinSession = "";
 let currentAllowedTabs = new Set(DEFAULT_PERSONNEL_TABS);
 let personnelAdminRows = [];
+let personnelRegistrationOpen = true;
 let currentLanguage = localStorage.getItem("koli_language") === "ar" ? "ar" : "tr";
 let movementRows = [];
 let scannerStream = null;
 let scannerFrameId = null;
 let scannerBusy = false;
 let scannerDetector = null;
+let imageModalHistoryActive = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -181,6 +184,7 @@ function applyTabPermissions(){
 
 function openPersonnelModal(canCancel = true){
   $("personnelNameInput").value = currentPersonnelName;
+  $("personnelPinInput").value = "";
   $("btnCancelPersonnel").classList.toggle("hidden", !canCancel || !currentPersonnelName);
   $("personnelModal").classList.remove("hidden");
   setTimeout(() => $("personnelNameInput").focus(), 50);
@@ -193,17 +197,24 @@ function closePersonnelModal(){
 
 async function savePersonnelProfile(){
   const name = $("personnelNameInput").value.trim().replace(/\s+/g, " ");
+  const pin = $("personnelPinInput").value.trim();
   if(name.length < 2){
     toast(t("enterName"));
     return;
   }
-  currentPersonnelName = name;
-  localStorage.setItem("koli_personnel_name", name);
-  $("personnelModal").classList.add("hidden");
+  if(pin.length < 4){
+    toast(t("pinPlaceholder"));
+    return;
+  }
   const button = $("btnSavePersonnel");
   setButtonLoading(button, true, "Giriş yapılıyor...");
   try{
-    await syncPersonnelProfile();
+    const loggedIn = await syncPersonnelProfile(name, pin);
+    if(!loggedIn) return;
+    currentPersonnelName = name;
+    currentPersonnelPin = pin;
+    localStorage.setItem("koli_personnel_name", name);
+    $("personnelModal").classList.add("hidden");
     updateProfileUi();
     switchTab("islem");
     toast(t("loginWelcome", { name }));
@@ -220,34 +231,47 @@ function initPersonnelProfile(){
   openPersonnelModal(false);
 }
 
-async function syncPersonnelProfile(){
+async function syncPersonnelProfile(name = currentPersonnelName, pin = currentPersonnelPin){
   currentAllowedTabs = new Set(DEFAULT_PERSONNEL_TABS);
-  if(!supabaseClient || !currentPersonnelName || !currentDeviceId){
+  if(!supabaseClient || !name || !pin || !currentDeviceId){
     updateProfileUi();
     return false;
   }
 
   try{
-    const { data, error } = await supabaseClient.rpc("register_depo_personnel", {
-      p_personnel_name:currentPersonnelName,
+    const { data, error } = await supabaseClient.rpc("login_depo_personnel", {
+      p_personnel_name:name,
+      p_personnel_pin:pin,
       p_device_id:currentDeviceId
     });
     if(error) throw new Error(error.message);
     const profile = Array.isArray(data) ? data[0] : data;
-    if(profile?.is_active === false){
-      currentAllowedTabs = new Set(["ayar"]);
-      toast("Bu personel kaydı pasif durumda. Admin ile görüş.");
-    }else{
-      const allowed = Array.isArray(profile?.allowed_tabs) ? profile.allowed_tabs : DEFAULT_PERSONNEL_TABS;
-      currentAllowedTabs = new Set([...DEFAULT_PERSONNEL_TABS, ...allowed.filter(tab => GRANTABLE_TABS.includes(tab))]);
-    }
+    const allowed = Array.isArray(profile?.allowed_tabs) ? profile.allowed_tabs : DEFAULT_PERSONNEL_TABS;
+    currentAllowedTabs = new Set([...DEFAULT_PERSONNEL_TABS, ...allowed.filter(tab => GRANTABLE_TABS.includes(tab))]);
     updateProfileUi();
     return true;
   }catch(error){
     updateProfileUi();
-    toast("Personel izinleri yüklenemedi. Güncel SUPABASE_KURULUM.sql dosyasını bir kez çalıştır.");
+    toast("Personel girişi yapılamadı: " + error.message);
     return false;
   }
+}
+
+async function ensurePersonnelActive(){
+  if(!currentPersonnelName || !currentPersonnelPin){
+    openPersonnelModal(false);
+    throw new Error("Personel adı ve PIN ile giriş yapmalısın.");
+  }
+  const { data, error } = await supabaseClient.rpc("verify_depo_personnel", {
+    p_personnel_name:currentPersonnelName,
+    p_personnel_pin:currentPersonnelPin
+  });
+  if(error || data !== true){
+    currentPersonnelPin = "";
+    openPersonnelModal(false);
+    throw new Error("Personel hesabı pasif, PIN yanlış veya oturum geçersiz.");
+  }
+  return true;
 }
 
 function findItem(id){
@@ -377,10 +401,13 @@ function itemHtml(item){
 
 function operationItemHtml(item){
   const id = escapeHtml(item.id);
+  const name = escapeHtml(item.product_name || "İsimsiz Ürün");
+  const image = item.image_url ? `<img class="operationThumb" src="${escapeHtml(item.image_url)}" alt="${name}" loading="lazy" tabindex="0" role="button" data-action="view-image" data-image-url="${escapeHtml(item.image_url)}" />` : "";
   return `
     <div class="item">
+      ${image}
       <div class="itemHead">
-        <div><h3>${escapeHtml(item.product_name || "İsimsiz Ürün")}</h3><p class="muted">${escapeHtml(itemExtra(item))}</p></div>
+        <div><h3>${name}</h3><p class="muted">${escapeHtml(itemExtra(item))}</p></div>
         <b>${itemTotal(item)} adet</b>
       </div>
       <div style="margin-top:8px">
@@ -588,6 +615,7 @@ async function saveItem(){
     openPersonnelModal(false);
     return;
   }
+  try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
 
   const type = $("productType").value;
   const initialSocketQuantity = type === "cerceve" ? Number($("socketQuantity").value || 0) : 0;
@@ -643,6 +671,7 @@ async function saveItem(){
 }
 
 async function savePayment(){
+  try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
   if(!canUseTab("odeme")){
     toast("Ödemeler sekmesi için yetkin bulunmuyor.");
     return;
@@ -743,13 +772,14 @@ function closeEditModal(){
 }
 
 async function applyStockMovement(item, direction, amount, variant, note = ""){
-  if(!currentPersonnelName) throw new Error("Önce personel adını kaydet.");
+  if(!currentPersonnelName || !currentPersonnelPin) throw new Error("Önce personel adı ve PIN ile giriş yap.");
   const { data, error } = await supabaseClient.rpc("apply_depo_stock_movement", {
     p_item_id:String(item.id),
     p_direction:direction,
     p_amount:amount,
     p_variant:variant,
     p_personnel_name:currentPersonnelName,
+    p_personnel_pin:currentPersonnelPin,
     p_device_id:currentDeviceId,
     p_note:note || null
   });
@@ -759,6 +789,7 @@ async function applyStockMovement(item, direction, amount, variant, note = ""){
 
 async function saveEdit(){
   if(!canUseTab("urun")) return;
+  try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
   const id = $("editId").value;
   const item = findItem(id);
   if(!item) return;
@@ -823,6 +854,7 @@ async function saveEdit(){
 }
 
 async function deleteItem(){
+  try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
   if(!canUseTab("urun")) return;
   const item = findItem($("editId").value);
   if(!item || !confirm(`"${item.product_name}" tamamen silinsin mi?`)) return;
@@ -1115,11 +1147,46 @@ async function loadPersonnelAdmin(){
       p_admin_pin:adminPinSession
     });
     if(error) throw new Error(error.message);
+    const { data:registrationOpen, error:registrationError } = await supabaseClient.rpc("get_depo_registration_status", {
+      p_admin_pin:adminPinSession
+    });
+    if(registrationError) throw new Error(registrationError.message);
+    personnelRegistrationOpen = registrationOpen === true;
     personnelAdminRows = data || [];
+    renderRegistrationStatus();
     renderPersonnelAdmin();
   }catch(error){
     $("personnelAdminList").innerHTML = `<p class="muted">Personel listesi alınamadı. Güncel SUPABASE_KURULUM.sql dosyasını çalıştır.</p>`;
     toast("Personel listesi alınamadı: " + error.message);
+  }finally{
+    setButtonLoading(button, false);
+  }
+}
+
+function renderRegistrationStatus(){
+  $("registrationStatusText").textContent = personnelRegistrationOpen
+    ? "Açık: Yeni isimler kendi PIN’ini belirleyerek kayıt olabilir."
+    : "Kapalı: Yalnız mevcut ve aktif personeller giriş yapabilir.";
+  $("btnToggleRegistration").textContent = personnelRegistrationOpen ? "Kayıtları Kapat" : "Kayıtları Aç";
+  $("btnToggleRegistration").classList.toggle("danger", personnelRegistrationOpen);
+}
+
+async function togglePersonnelRegistration(){
+  if(!adminUnlocked) return;
+  const button = $("btnToggleRegistration");
+  setButtonLoading(button, true, "Kaydediliyor...");
+  try{
+    const { data, error } = await supabaseClient.rpc("set_depo_registration_status", {
+      p_admin_pin:adminPinSession,
+      p_is_open:!personnelRegistrationOpen
+    });
+    if(error) throw new Error(error.message);
+    if(data !== true) throw new Error("Ayar kaydedilemedi.");
+    personnelRegistrationOpen = !personnelRegistrationOpen;
+    renderRegistrationStatus();
+    toast(personnelRegistrationOpen ? "Yeni personel kayıtları açıldı." : "Yeni personel kayıtları kapatıldı.");
+  }catch(error){
+    toast("Kayıt ayarı değiştirilemedi: " + error.message);
   }finally{
     setButtonLoading(button, false);
   }
@@ -1144,8 +1211,42 @@ function renderPersonnelAdmin(){
             </label>`).join("")}
         </div>
         <button type="button" class="primary" data-action="save-personnel-tabs" data-id="${escapeHtml(person.id)}">Sekme İzinlerini Kaydet</button>
+        <div class="personnelSecurityActions">
+          <input type="password" inputmode="numeric" minlength="4" maxlength="12" data-personnel-new-pin placeholder="Yeni PIN (en az 4 hane)" />
+          <button type="button" data-action="set-personnel-pin" data-id="${escapeHtml(person.id)}">PIN Belirle / Sıfırla</button>
+          <button type="button" class="${person.is_active === false ? "primary" : "danger"}" data-action="toggle-personnel-active" data-id="${escapeHtml(person.id)}" data-active="${person.is_active !== false}">${person.is_active === false ? "Personeli Yeniden Aktifleştir" : "Personeli Sil / Pasife Al"}</button>
+        </div>
       </div>`;
   }).join("") || `<p class="muted">Henüz personel kaydı yok. Personeller yeni sürümde adını girince burada görünecek.</p>`;
+}
+
+async function setPersonnelPin(personnelId){
+  const card = document.querySelector(`[data-personnel-card="${personnelId}"]`);
+  const newPin = card?.querySelector("[data-personnel-new-pin]")?.value.trim() || "";
+  if(newPin.length < 4){ toast("Yeni personel PIN en az 4 haneli olmalı."); return; }
+  try{
+    const { data, error } = await supabaseClient.rpc("set_depo_personnel_pin", {
+      p_admin_pin:adminPinSession, p_personnel_id:personnelId, p_new_pin:newPin
+    });
+    if(error) throw new Error(error.message);
+    if(data !== true) throw new Error("Personel bulunamadı.");
+    card.querySelector("[data-personnel-new-pin]").value = "";
+    toast("Personel PIN’i ayarlandı.");
+  }catch(error){ toast("PIN ayarlanamadı: " + error.message); }
+}
+
+async function togglePersonnelActive(personnelId, currentlyActive){
+  const nextActive = !currentlyActive;
+  if(!nextActive && !confirm("Bu personel pasife alınacak ve artık giriş/stok işlemi yapamayacak. Devam edilsin mi?")) return;
+  try{
+    const { data, error } = await supabaseClient.rpc("set_depo_personnel_active", {
+      p_admin_pin:adminPinSession, p_personnel_id:personnelId, p_is_active:nextActive
+    });
+    if(error) throw new Error(error.message);
+    if(data !== true) throw new Error("Personel bulunamadı.");
+    toast(nextActive ? "Personel yeniden aktifleştirildi." : "Personel pasife alındı; giriş ve stok işlemleri engellendi.");
+    await loadPersonnelAdmin();
+  }catch(error){ toast("Personel durumu değiştirilemedi: " + error.message); }
 }
 
 async function savePersonnelTabs(personnelId){
@@ -1307,11 +1408,24 @@ function openImageModal(url){
   if(!url) return;
   $("modalImage").src = url;
   $("imageModal").classList.remove("hidden");
+  if(!imageModalHistoryActive){
+    history.pushState({ koliImageModal:true }, "");
+    imageModalHistoryActive = true;
+  }
 }
 
 function closeImageModal(){
+  if(imageModalHistoryActive){
+    history.back();
+    return;
+  }
+  hideImageModal();
+}
+
+function hideImageModal(){
   $("imageModal").classList.add("hidden");
   $("modalImage").src = "";
+  imageModalHistoryActive = false;
 }
 
 function handleDataAction(target){
@@ -1323,6 +1437,8 @@ function handleDataAction(target){
   if(action === "edit") openEditModal(actionElement.dataset.id);
   if(action === "view-image") openImageModal(actionElement.dataset.imageUrl);
   if(action === "save-personnel-tabs") savePersonnelTabs(actionElement.dataset.id);
+  if(action === "set-personnel-pin") setPersonnelPin(actionElement.dataset.id);
+  if(action === "toggle-personnel-active") togglePersonnelActive(actionElement.dataset.id, actionElement.dataset.active === "true");
 }
 
 function setupEvents(){
@@ -1351,6 +1467,7 @@ function setupEvents(){
   $("btnSavePersonnel").addEventListener("click", savePersonnelProfile);
   $("btnCancelPersonnel").addEventListener("click", closePersonnelModal);
   $("personnelNameInput").addEventListener("keydown", event => { if(event.key === "Enter") savePersonnelProfile(); });
+  $("personnelPinInput").addEventListener("keydown", event => { if(event.key === "Enter") savePersonnelProfile(); });
 
   $("btnAdminEntry").addEventListener("click", () => adminUnlocked ? adminLogout() : openAdminModal());
   $("btnCloseAdminModal").addEventListener("click", closeAdminModal);
@@ -1395,6 +1512,7 @@ function setupEvents(){
   $("adminPin").addEventListener("keydown", event => { if(event.key === "Enter") adminLogin(); });
   $("btnChangeAdminPin").addEventListener("click", changeAdminPin);
   $("btnLoadPersonnel").addEventListener("click", loadPersonnelAdmin);
+  $("btnToggleRegistration").addEventListener("click", togglePersonnelRegistration);
   $("btnToday").addEventListener("click", () => setReportPeriod("today"));
   $("btnThisWeek").addEventListener("click", () => setReportPeriod("week"));
   $("btnLoadMovements").addEventListener("click", loadMovements);
@@ -1416,6 +1534,9 @@ function setupEvents(){
   });
 
   document.addEventListener("click", event => handleDataAction(event.target));
+  window.addEventListener("popstate", () => {
+    if(imageModalHistoryActive) hideImageModal();
+  });
   document.addEventListener("keydown", event => {
     if((event.key === "Enter" || event.key === " ") && event.target.matches('[data-action="view-image"]')){
       event.preventDefault();

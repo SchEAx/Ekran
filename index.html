@@ -209,6 +209,10 @@
 
     <section id="tab-personel" class="panel">
       <div class="card">
+        <div class="subcard registrationControl">
+          <div><h3>Yeni Personel Kaydı</h3><p id="registrationStatusText" class="muted">Durum yükleniyor...</p></div>
+          <button type="button" id="btnToggleRegistration">Kayıtları Kapat</button>
+        </div>
         <div class="reportHead">
           <div><h2>Personeller & Sekme İzinleri</h2><p class="muted sectionHint">Personeller uygulamaya ilk giriş yaptığında burada görünür. Stok işlemi ve Ayarlar herkeste açıktır; diğer sekmeleri buradan verebilirsin.</p></div>
           <button type="button" id="btnLoadPersonnel">Listeyi Yenile</button>
@@ -351,6 +355,7 @@
         <button type="button" class="languageChoice" data-language-choice="ar">🇸🇾 العربية</button>
       </div>
       <label><span data-i18n="fullName">Ad Soyad</span><input id="personnelNameInput" maxlength="60" autocomplete="name" data-i18n-placeholder="namePlaceholder" placeholder="Örn: Ahmet Yılmaz" /></label>
+      <label><span data-i18n="personnelPin">Personel PIN</span><input id="personnelPinInput" type="password" inputmode="numeric" minlength="4" maxlength="12" autocomplete="current-password" data-i18n-placeholder="pinPlaceholder" placeholder="En az 4 hane" /></label>
       <div class="actions"><button type="button" id="btnSavePersonnel" class="primary" data-i18n="continueAsPersonnel">Personel Olarak Devam Et</button><button type="button" id="btnCancelPersonnel" class="hidden" data-i18n="cancel">Vazgeç</button></div>
     </div>
   </div>
