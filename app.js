@@ -1,4 +1,4 @@
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "2.1.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -9,6 +9,18 @@ const THEMES = {
   violet: "#2e1648",
   graphite: "#25282c",
   light: "#f8fafc"
+};
+
+const DEFAULT_PERSONNEL_TABS = ["islem", "ayar"];
+const ADMIN_ONLY_TABS = ["personel", "hareket"];
+const GRANTABLE_TABS = ["urun", "liste", "koli", "odeme"];
+const TAB_LABELS = {
+  urun:"Ürün Ekle",
+  islem:"Stok Giriş / Çıkış",
+  liste:"Stok Listesi",
+  koli:"Koli Yönetimi",
+  odeme:"Ödemeler",
+  ayar:"Ayarlar"
 };
 
 let supabaseClient = null;
@@ -23,6 +35,8 @@ let currentPersonnelName = "";
 let currentDeviceId = "";
 let adminUnlocked = false;
 let adminPinSession = "";
+let currentAllowedTabs = new Set(DEFAULT_PERSONNEL_TABS);
+let personnelAdminRows = [];
 let movementRows = [];
 let scannerStream = null;
 let scannerFrameId = null;
@@ -57,12 +71,30 @@ function createDeviceId(){
 function updateProfileUi(){
   const name = currentPersonnelName || "Personel";
   $("profileName").textContent = name;
-  $("profileRole").textContent = adminUnlocked ? "Admin açık" : "Personel";
+  $("profileRole").textContent = adminUnlocked ? "Admin" : "Personel";
   $("settingsPersonnelName").textContent = name;
-  $("movementsTabButton").classList.toggle("hidden", !adminUnlocked);
-  $("adminLoginArea").classList.toggle("hidden", adminUnlocked);
   $("adminChangePinArea").classList.toggle("hidden", !adminUnlocked);
-  $("btnAdminLogout").classList.toggle("hidden", !adminUnlocked);
+  $("btnAdminEntry").classList.toggle("adminActive", adminUnlocked);
+  $("btnAdminEntry").querySelector("b").textContent = adminUnlocked ? "Admin Çıkışı" : "Admin Girişi";
+  applyTabPermissions();
+}
+
+function canUseTab(tabName){
+  if(adminUnlocked) return true;
+  if(ADMIN_ONLY_TABS.includes(tabName)) return false;
+  return currentAllowedTabs.has(tabName);
+}
+
+function applyTabPermissions(){
+  document.querySelectorAll(".tab[data-tab]").forEach(button => {
+    button.classList.toggle("hidden", !canUseTab(button.dataset.tab));
+  });
+  $("heroSection").classList.toggle("hidden", !canUseTab("liste"));
+
+  const activeButton = document.querySelector(".tab.active");
+  if(activeButton && !canUseTab(activeButton.dataset.tab)){
+    switchTab("islem");
+  }
 }
 
 function openPersonnelModal(canCancel = true){
@@ -77,7 +109,7 @@ function closePersonnelModal(){
   $("personnelModal").classList.add("hidden");
 }
 
-function savePersonnelProfile(){
+async function savePersonnelProfile(){
   const name = $("personnelNameInput").value.trim().replace(/\s+/g, " ");
   if(name.length < 2){
     toast("Personel adını en az 2 karakter gir knk.");
@@ -86,8 +118,16 @@ function savePersonnelProfile(){
   currentPersonnelName = name;
   localStorage.setItem("koli_personnel_name", name);
   $("personnelModal").classList.add("hidden");
-  updateProfileUi();
-  toast(`Hoş geldin ${name}. İşlemler artık adına kaydedilecek.`);
+  const button = $("btnSavePersonnel");
+  setButtonLoading(button, true, "Giriş yapılıyor...");
+  try{
+    await syncPersonnelProfile();
+    updateProfileUi();
+    switchTab("islem");
+    toast(`Hoş geldin ${name}. İşlemler artık adına kaydedilecek.`);
+  }finally{
+    setButtonLoading(button, false);
+  }
 }
 
 function initPersonnelProfile(){
@@ -95,7 +135,37 @@ function initPersonnelProfile(){
   currentDeviceId = localStorage.getItem("koli_device_id") || createDeviceId();
   localStorage.setItem("koli_device_id", currentDeviceId);
   updateProfileUi();
-  if(!currentPersonnelName) openPersonnelModal(false);
+  openPersonnelModal(false);
+}
+
+async function syncPersonnelProfile(){
+  currentAllowedTabs = new Set(DEFAULT_PERSONNEL_TABS);
+  if(!supabaseClient || !currentPersonnelName || !currentDeviceId){
+    updateProfileUi();
+    return false;
+  }
+
+  try{
+    const { data, error } = await supabaseClient.rpc("register_depo_personnel", {
+      p_personnel_name:currentPersonnelName,
+      p_device_id:currentDeviceId
+    });
+    if(error) throw new Error(error.message);
+    const profile = Array.isArray(data) ? data[0] : data;
+    if(profile?.is_active === false){
+      currentAllowedTabs = new Set(["ayar"]);
+      toast("Bu personel kaydı pasif durumda. Admin ile görüş.");
+    }else{
+      const allowed = Array.isArray(profile?.allowed_tabs) ? profile.allowed_tabs : DEFAULT_PERSONNEL_TABS;
+      currentAllowedTabs = new Set([...DEFAULT_PERSONNEL_TABS, ...allowed.filter(tab => GRANTABLE_TABS.includes(tab))]);
+    }
+    updateProfileUi();
+    return true;
+  }catch(error){
+    updateProfileUi();
+    toast("Personel izinleri yüklenemedi. Güncel SUPABASE_KURULUM.sql dosyasını bir kez çalıştır.");
+    return false;
+  }
 }
 
 function findItem(id){
@@ -172,18 +242,11 @@ function applyTheme(themeName, persist = true){
   });
 }
 
-function initSupabase(){
-  const savedUrl = localStorage.getItem("koli_supabase_url") || "";
-  const savedKey = localStorage.getItem("koli_supabase_key") || "";
-  const url = savedUrl || SUPABASE_URL;
-  const key = savedKey || SUPABASE_ANON_KEY;
-
-  $("supabaseUrl").value = url;
-  $("supabaseKey").value = key;
-
-  if(url && key && window.supabase){
-    supabaseClient = window.supabase.createClient(url, key);
-    loadAll();
+async function initSupabase(){
+  if(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase){
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if(currentPersonnelName) await syncPersonnelProfile();
+    await loadAll();
   }
 }
 
@@ -225,7 +288,7 @@ function itemHtml(item){
       <div class="stockActions">
         <button type="button" class="stockIn" data-action="stock-in" data-id="${id}">+ Stok Girişi</button>
         <button type="button" class="stockOut" data-action="stock-out" data-id="${id}">− Stok Çıkışı</button>
-        <button type="button" data-action="edit" data-id="${id}">Düzenle</button>
+        ${canUseTab("urun") ? `<button type="button" data-action="edit" data-id="${id}">Düzenle</button>` : ""}
       </div>
     </div>`;
 }
@@ -268,7 +331,6 @@ async function loadAll(){
   renderOperationList();
   renderStats();
   renderBoxes();
-  loadPayments();
 }
 
 function renderStats(){
@@ -432,6 +494,10 @@ async function uploadProductImage(file){
 }
 
 async function saveItem(){
+  if(!canUseTab("urun")){
+    toast("Ürün ekleme yetkin bulunmuyor.");
+    return;
+  }
   if(!supabaseClient){
     toast("Önce Supabase ayarlarını gir knk.");
     return;
@@ -495,6 +561,10 @@ async function saveItem(){
 }
 
 async function savePayment(){
+  if(!canUseTab("odeme")){
+    toast("Ödemeler sekmesi için yetkin bulunmuyor.");
+    return;
+  }
   if(!supabaseClient){
     toast("Önce Supabase ayarlarını gir knk.");
     return;
@@ -522,7 +592,7 @@ async function savePayment(){
 }
 
 async function loadPayments(){
-  if(!supabaseClient) return;
+  if(!supabaseClient || !canUseTab("odeme")) return;
   const { data, error } = await supabaseClient.from("depo_payments").select("*").order("created_at", { ascending:false }).limit(30);
   if(error) return;
   $("paymentList").innerHTML = (data || []).map(payment => `
@@ -534,15 +604,21 @@ async function loadPayments(){
 }
 
 function switchTab(tabName){
-  if(tabName === "hareket" && !adminUnlocked){
-    toast("Hareketler yalnızca admin tarafından açılabilir.");
+  if(!canUseTab(tabName)){
+    toast("Bu sekme için yetkin bulunmuyor.");
     return;
   }
   document.querySelectorAll(".tab").forEach(button => button.classList.toggle("active", button.dataset.tab === tabName));
   document.querySelectorAll(".panel").forEach(panel => panel.classList.toggle("active", panel.id === `tab-${tabName}`));
+  if(tabName === "odeme") loadPayments();
+  if(tabName === "personel") loadPersonnelAdmin();
 }
 
 function doSearch(){
+  if(!canUseTab("liste")){
+    toast("Stok Listesi sekmesi için yetkin bulunmuyor.");
+    return;
+  }
   const query = normalize($("searchInput").value.trim());
   const list = query ? allItems.filter(item => itemSearchText(item).includes(query)) : allItems;
   switchTab("liste");
@@ -550,6 +626,10 @@ function doSearch(){
 }
 
 function openEditModal(id){
+  if(!canUseTab("urun")){
+    toast("Ürün düzenleme yetkin bulunmuyor.");
+    return;
+  }
   const item = findItem(id);
   if(!item) return;
 
@@ -596,6 +676,7 @@ async function applyStockMovement(item, direction, amount, variant, note = ""){
 }
 
 async function saveEdit(){
+  if(!canUseTab("urun")) return;
   const id = $("editId").value;
   const item = findItem(id);
   if(!item) return;
@@ -660,6 +741,7 @@ async function saveEdit(){
 }
 
 async function deleteItem(){
+  if(!canUseTab("urun")) return;
   const item = findItem($("editId").value);
   if(!item || !confirm(`"${item.product_name}" tamamen silinsin mi?`)) return;
   const { error } = await supabaseClient.from("depo_items").delete().eq("id", item.id);
@@ -860,6 +942,17 @@ function setReportPeriod(mode){
   if(adminUnlocked) loadMovements();
 }
 
+function openAdminModal(){
+  $("adminPin").value = "";
+  $("adminModal").classList.remove("hidden");
+  setTimeout(() => $("adminPin").focus(), 50);
+}
+
+function closeAdminModal(){
+  $("adminModal").classList.add("hidden");
+  $("adminPin").value = "";
+}
+
 async function adminLogin(){
   if(!supabaseClient){
     toast("Supabase bağlantısı bulunamadı.");
@@ -874,17 +967,23 @@ async function adminLogin(){
   setButtonLoading(button, true, "Kontrol ediliyor...");
   try{
     const { data, error } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:pin });
-    if(error) throw new Error(error.message);
+    if(error){
+      if(/crypt\(text, text\).*does not exist/i.test(error.message)){
+        throw new Error("Supabase şifre fonksiyonu eski. Güncel SUPABASE_KURULUM.sql dosyasını tekrar çalıştır.");
+      }
+      throw new Error(error.message);
+    }
     if(data !== true){
       toast("Admin PIN’i yanlış.");
       return;
     }
     adminUnlocked = true;
     adminPinSession = pin;
-    $("adminPin").value = "";
+    closeAdminModal();
     updateProfileUi();
     setReportPeriod("today");
-    toast("Admin modu açıldı. Hareketler sekmesi görünür durumda.");
+    loadPersonnelAdmin();
+    toast("Admin modu açıldı. Tüm sekmeler görünür durumda.");
   }catch(error){
     toast("Admin girişi açılamadı: " + error.message);
   }finally{
@@ -896,7 +995,6 @@ function adminLogout(){
   adminUnlocked = false;
   adminPinSession = "";
   movementRows = [];
-  if($("tab-hareket").classList.contains("active")) switchTab("ayar");
   updateProfileUi();
   toast("Admin modu kapatıldı.");
 }
@@ -924,6 +1022,72 @@ async function changeAdminPin(){
   $("currentAdminPin").value = "";
   $("newAdminPin").value = "";
   toast("Admin PIN’i değiştirildi.");
+}
+
+async function loadPersonnelAdmin(){
+  if(!adminUnlocked || !adminPinSession) return;
+  const button = $("btnLoadPersonnel");
+  setButtonLoading(button, true, "Yükleniyor...");
+  try{
+    const { data, error } = await supabaseClient.rpc("get_depo_personnel_list", {
+      p_admin_pin:adminPinSession
+    });
+    if(error) throw new Error(error.message);
+    personnelAdminRows = data || [];
+    renderPersonnelAdmin();
+  }catch(error){
+    $("personnelAdminList").innerHTML = `<p class="muted">Personel listesi alınamadı. Güncel SUPABASE_KURULUM.sql dosyasını çalıştır.</p>`;
+    toast("Personel listesi alınamadı: " + error.message);
+  }finally{
+    setButtonLoading(button, false);
+  }
+}
+
+function renderPersonnelAdmin(){
+  $("personnelAdminList").innerHTML = personnelAdminRows.map(person => {
+    const allowed = new Set(Array.isArray(person.allowed_tabs) ? person.allowed_tabs : DEFAULT_PERSONNEL_TABS);
+    const lastSeen = person.last_seen_at ? formatMovementDate(person.last_seen_at) : "-";
+    return `
+      <div class="item permissionCard" data-personnel-card="${escapeHtml(person.id)}">
+        <div class="itemHead">
+          <div><h3>👤 ${escapeHtml(person.personnel_name)}</h3><p class="muted">Son giriş: ${escapeHtml(lastSeen)}</p></div>
+          <span class="badge">${person.is_active === false ? "Pasif" : "Aktif"}</span>
+        </div>
+        <div class="fixedPermissions"><span class="badge permissionFixed">✓ Stok Giriş / Çıkış</span><span class="badge permissionFixed">✓ Ayarlar</span></div>
+        <div class="permissionGrid">
+          ${GRANTABLE_TABS.map(tab => `
+            <label class="permissionChoice">
+              <input type="checkbox" data-tab-permission="${tab}" ${allowed.has(tab) ? "checked" : ""} />
+              <span>${escapeHtml(TAB_LABELS[tab])}</span>
+            </label>`).join("")}
+        </div>
+        <button type="button" class="primary" data-action="save-personnel-tabs" data-id="${escapeHtml(person.id)}">Sekme İzinlerini Kaydet</button>
+      </div>`;
+  }).join("") || `<p class="muted">Henüz personel kaydı yok. Personeller yeni sürümde adını girince burada görünecek.</p>`;
+}
+
+async function savePersonnelTabs(personnelId){
+  if(!adminUnlocked) return;
+  const card = document.querySelector(`[data-personnel-card="${personnelId}"]`);
+  if(!card) return;
+  const extras = [...card.querySelectorAll("[data-tab-permission]:checked")].map(input => input.dataset.tabPermission);
+  const button = card.querySelector('[data-action="save-personnel-tabs"]');
+  setButtonLoading(button, true, "Kaydediliyor...");
+  try{
+    const { data, error } = await supabaseClient.rpc("set_depo_personnel_tabs", {
+      p_admin_pin:adminPinSession,
+      p_personnel_id:personnelId,
+      p_allowed_tabs:[...DEFAULT_PERSONNEL_TABS, ...extras]
+    });
+    if(error) throw new Error(error.message);
+    if(data !== true) throw new Error("Yetki kaydı bulunamadı.");
+    toast("Sekme izinleri kaydedildi. Personel uygulamayı yeniden açtığında aktif olacak.");
+    await loadPersonnelAdmin();
+  }catch(error){
+    toast("Sekme izinleri kaydedilemedi: " + error.message);
+  }finally{
+    setButtonLoading(button, false);
+  }
 }
 
 function movementVariantLabel(value){
@@ -1076,6 +1240,7 @@ function handleDataAction(target){
   if(action === "stock-out") openOperationModal(actionElement.dataset.id, -1);
   if(action === "edit") openEditModal(actionElement.dataset.id);
   if(action === "view-image") openImageModal(actionElement.dataset.imageUrl);
+  if(action === "save-personnel-tabs") savePersonnelTabs(actionElement.dataset.id);
 }
 
 function setupEvents(){
@@ -1104,6 +1269,11 @@ function setupEvents(){
   $("btnSavePersonnel").addEventListener("click", savePersonnelProfile);
   $("btnCancelPersonnel").addEventListener("click", closePersonnelModal);
   $("personnelNameInput").addEventListener("keydown", event => { if(event.key === "Enter") savePersonnelProfile(); });
+
+  $("btnAdminEntry").addEventListener("click", () => adminUnlocked ? adminLogout() : openAdminModal());
+  $("btnCloseAdminModal").addEventListener("click", closeAdminModal);
+  $("btnCancelAdminLogin").addEventListener("click", closeAdminModal);
+  $("adminModal").addEventListener("click", event => { if(event.target.id === "adminModal") closeAdminModal(); });
 
   $("btnEditCamera").addEventListener("click", () => $("editProductImageCamera").click());
   $("btnEditGallery").addEventListener("click", () => $("editProductImageGallery").click());
@@ -1141,8 +1311,8 @@ function setupEvents(){
 
   $("btnAdminLogin").addEventListener("click", adminLogin);
   $("adminPin").addEventListener("keydown", event => { if(event.key === "Enter") adminLogin(); });
-  $("btnAdminLogout").addEventListener("click", adminLogout);
   $("btnChangeAdminPin").addEventListener("click", changeAdminPin);
+  $("btnLoadPersonnel").addEventListener("click", loadPersonnelAdmin);
   $("btnToday").addEventListener("click", () => setReportPeriod("today"));
   $("btnThisWeek").addEventListener("click", () => setReportPeriod("week"));
   $("btnLoadMovements").addEventListener("click", loadMovements);
@@ -1156,13 +1326,6 @@ function setupEvents(){
     });
   });
 
-  $("btnConfig").addEventListener("click", () => {
-    localStorage.setItem("koli_supabase_url", $("supabaseUrl").value.trim());
-    localStorage.setItem("koli_supabase_key", $("supabaseKey").value.trim());
-    toast("Bağlantı ayarları kaydedildi.");
-    initSupabase();
-  });
-
   document.addEventListener("click", event => handleDataAction(event.target));
   document.addEventListener("keydown", event => {
     if((event.key === "Enter" || event.key === " ") && event.target.matches('[data-action="view-image"]')){
@@ -1171,6 +1334,7 @@ function setupEvents(){
     }
     if(event.key === "Escape"){
       if(!$("scannerModal").classList.contains("hidden")) closeBarcodeScanner();
+      else if(!$("adminModal").classList.contains("hidden")) closeAdminModal();
       else if(!$("operationModal").classList.contains("hidden")) closeOperationModal();
       else if(!$("editModal").classList.contains("hidden")) closeEditModal();
       else if(!$("imageModal").classList.contains("hidden")) closeImageModal();

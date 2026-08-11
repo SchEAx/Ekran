@@ -19,6 +19,7 @@
       <p>Çerçeve & Multimedya stok sistemi</p>
     </div>
     <div class="topbarRight">
+      <button type="button" id="btnAdminEntry" class="adminEntryButton"><span>🔐</span><b>Admin Girişi</b></button>
       <button type="button" id="btnProfile" class="profileButton" title="Personel profili">
         <span>👤</span><b id="profileName">Personel</b><small id="profileRole">Personel</small>
       </button>
@@ -27,7 +28,7 @@
   </header>
 
   <main class="container">
-    <section class="hero">
+    <section id="heroSection" class="hero hidden">
       <div class="searchbox">
         <input id="searchInput" placeholder="Ürün, araç modeli, koli no, marka ara..." autocomplete="off" />
         <button id="btnSearch">Ara</button>
@@ -41,11 +42,12 @@
     </section>
 
     <nav class="tabs">
-      <button class="tab" data-tab="urun">Ürün Ekle</button>
+      <button class="tab permissionTab hidden" data-tab="urun">Ürün Ekle</button>
       <button class="tab active" data-tab="islem">Stok Giriş / Çıkış</button>
-      <button class="tab" data-tab="liste">Stok Listesi</button>
-      <button class="tab" data-tab="koli">Koli Yönetimi</button>
-      <button class="tab" data-tab="odeme">Ödemeler</button>
+      <button class="tab permissionTab hidden" data-tab="liste">Stok Listesi</button>
+      <button class="tab permissionTab hidden" data-tab="koli">Koli Yönetimi</button>
+      <button class="tab permissionTab hidden" data-tab="odeme">Ödemeler</button>
+      <button id="personnelTabButton" class="tab hidden" data-tab="personel">Personeller</button>
       <button id="movementsTabButton" class="tab hidden" data-tab="hareket">Hareketler</button>
       <button class="tab" data-tab="ayar">Ayarlar</button>
     </nav>
@@ -203,6 +205,16 @@
       </div>
     </section>
 
+    <section id="tab-personel" class="panel">
+      <div class="card">
+        <div class="reportHead">
+          <div><h2>Personeller & Sekme İzinleri</h2><p class="muted sectionHint">Personeller uygulamaya ilk giriş yaptığında burada görünür. Stok işlemi ve Ayarlar herkeste açıktır; diğer sekmeleri buradan verebilirsin.</p></div>
+          <button type="button" id="btnLoadPersonnel">Listeyi Yenile</button>
+        </div>
+        <div id="personnelAdminList" class="list personnelAdminList"></div>
+      </div>
+    </section>
+
     <section id="tab-hareket" class="panel">
       <div class="card">
         <div class="reportHead">
@@ -241,15 +253,10 @@
     <section id="tab-ayar" class="panel">
       <div class="settingsGrid">
         <div class="card">
-          <h2>Personel & Admin</h2>
+          <h2>Personel Profili</h2>
           <p class="muted sectionHint">Bu cihazda kayıtlı personel: <b id="settingsPersonnelName">-</b></p>
           <div class="actions">
             <button type="button" id="btnChangePersonnel">Personeli Değiştir</button>
-            <button type="button" id="btnAdminLogout" class="danger hidden">Admin Modunu Kapat</button>
-          </div>
-          <div id="adminLoginArea" class="subcard">
-            <label>Admin PIN<input id="adminPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Admin PIN" /></label>
-            <button type="button" id="btnAdminLogin" class="primary">Admin Girişi</button>
           </div>
           <div id="adminChangePinArea" class="subcard hidden">
             <h3>Admin PIN Değiştir</h3>
@@ -271,13 +278,6 @@
             <button type="button" class="themeChoice" data-theme-choice="graphite"><span class="themeSwatch swatchGraphite"></span><span><b>Grafit</b><small>Sade gri</small></span></button>
             <button type="button" class="themeChoice" data-theme-choice="light"><span class="themeSwatch swatchLight"></span><span><b>Aydınlık</b><small>Açık tema</small></span></button>
           </div>
-        </div>
-        <div class="card">
-          <h2>Supabase Ayarları</h2>
-          <p class="muted sectionHint">Aşağıdaki bilgiler bir kere girildiğinde bu tarayıcıya kaydedilir.</p>
-          <label>Supabase URL <input id="supabaseUrl" placeholder="https://xxxxx.supabase.co" /></label>
-          <label>Anon Key <textarea id="supabaseKey" placeholder="eyJ..."></textarea></label>
-          <button id="btnConfig" class="primary">Bağlantı Ayarlarını Kaydet</button>
         </div>
       </div>
     </section>
@@ -335,9 +335,17 @@
   <div id="personnelModal" class="editModal hidden">
     <div class="editCard personnelCard">
       <h2>👋 Personel Girişi</h2>
-      <p class="muted sectionHint">Adını bir kez girmen yeterli. Bundan sonraki stok giriş/çıkışları senin adına kaydedilecek.</p>
+      <p class="muted sectionHint">Adını bir kez kaydetmen yeterli. Sonraki açılışlarda adın hazır gelecek; devam dediğinde stok işlemleri senin adına tutulacak.</p>
       <label>Ad Soyad<input id="personnelNameInput" maxlength="60" autocomplete="name" placeholder="Örn: Ahmet Yılmaz" /></label>
-      <div class="actions"><button type="button" id="btnSavePersonnel" class="primary">Bu Cihaza Kaydet</button><button type="button" id="btnCancelPersonnel" class="hidden">Vazgeç</button></div>
+      <div class="actions"><button type="button" id="btnSavePersonnel" class="primary">Personel Olarak Devam Et</button><button type="button" id="btnCancelPersonnel" class="hidden">Vazgeç</button></div>
+    </div>
+  </div>
+  <div id="adminModal" class="editModal hidden">
+    <div class="editCard adminLoginCard">
+      <div class="itemHead"><div><h2>🔐 Admin Girişi</h2><p class="muted">Admin PIN’ini girince bütün sekmeler ve personel izinleri açılır.</p></div><button type="button" id="btnCloseAdminModal">×</button></div>
+      <label>Admin PIN<input id="adminPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Admin PIN" /></label>
+      <div class="actions"><button type="button" id="btnAdminLogin" class="primary">Admin Olarak Gir</button><button type="button" id="btnCancelAdminLogin">Vazgeç</button></div>
+      <p class="muted adminHelp">PIN çalışmıyorsa ZIP içindeki <b>ADMIN_SIFRE_SIFIRLA.sql</b> dosyasını Supabase SQL Editor’da bir kez çalıştır.</p>
     </div>
   </div>
   <div id="scannerModal" class="editModal hidden">
