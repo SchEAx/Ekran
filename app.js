@@ -1,4 +1,4 @@
-const APP_VERSION = "2.1.0";
+const APP_VERSION = "2.2.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -15,12 +15,57 @@ const DEFAULT_PERSONNEL_TABS = ["islem", "ayar"];
 const ADMIN_ONLY_TABS = ["personel", "hareket"];
 const GRANTABLE_TABS = ["urun", "liste", "koli", "odeme"];
 const TAB_LABELS = {
-  urun:"Ürün Ekle",
-  islem:"Stok Giriş / Çıkış",
-  liste:"Stok Listesi",
-  koli:"Koli Yönetimi",
-  odeme:"Ödemeler",
-  ayar:"Ayarlar"
+  urun:"tabProduct",
+  islem:"tabOperation",
+  liste:"tabStockList",
+  koli:"tabBoxes",
+  odeme:"tabPayments",
+  ayar:"tabSettings"
+};
+
+const I18N = {
+  tr:{
+    appTitle:"📦 Koli Depo", appSubtitle:"Çerçeve & Multimedya stok sistemi",
+    adminLogin:"Admin Girişi", adminLogout:"Admin Çıkışı", personnel:"Personel", admin:"Admin",
+    tabProduct:"Ürün Ekle", tabOperation:"Stok Giriş / Çıkış", tabStockList:"Stok Listesi", tabBoxes:"Koli Yönetimi", tabPayments:"Ödemeler", tabPersonnel:"Personeller", tabMovements:"Hareketler", tabSettings:"Ayarlar",
+    operationTitle:"Stok Giriş / Çıkış", operationHint:"Ürünü bul, giriş veya çıkış seç ve adedi gir. Çerçevelerde soketli/soketsiz stok ayrı güncellenir.",
+    quickBarcode:"⚡ Barkodla Hızlı Çıkış", quickBarcodeHint:"Barkodu okutunca ürün doğrudan çıkış ekranında açılır.", barcodePlaceholder:"Barkodu okut veya numarayı yaz", findProduct:"Ürünü Bul", scanCamera:"📷 Kamera ile Tara",
+    searchProduct:"Ürün Ara", searchPlaceholder:"Ürün, araç, koli no veya raf ara...", productType:"Ürün Tipi", all:"Tümü", frame:"Çerçeve", multimedia:"Multimedya",
+    personnelProfile:"Personel Profili", registeredPersonnel:"Bu cihazda kayıtlı personel:", changePersonnel:"Personeli Değiştir",
+    languageTitle:"Dil / اللغة", languageHint:"Uygulama dilini seç. Seçim bu cihazda kayıtlı kalır.", themeColors:"Tema Renkleri", themeHint:"Seçtiğin tema bu cihazda kayıtlı kalır.", update:"Güncelle",
+    themeMidnight:"Turuncu Gece", themeOcean:"Okyanus", themeForest:"Orman", themeViolet:"Mor Gece", themeGraphite:"Grafit", themeLight:"Aydınlık", themeDarkWarm:"Koyu ve sıcak", themeBlue:"Mavi tonlar", themeGreen:"Yeşil tonlar", themePurple:"Mor ve pembe", themeGray:"Sade gri", themeOpen:"Açık tema",
+    stockType:"Stok Türü", withSocket:"Soketli", withoutSocket:"Soketsiz", quantity:"Adet", operationNote:"İşlem Notu (isteğe bağlı)", operationNotePlaceholder:"Örn: Montaj için alındı", saveOperation:"İşlemi Kaydet", cancel:"Vazgeç",
+    personnelLogin:"👋 Personel Girişi", personnelLoginHint:"Adını bir kez kaydetmen yeterli. Sonraki açılışlarda adın hazır gelecek; devam dediğinde stok işlemleri senin adına tutulacak.", fullName:"Ad Soyad", namePlaceholder:"Örn: Ahmet Yılmaz", continueAsPersonnel:"Personel Olarak Devam Et",
+    showBarcode:"Barkodu Kameraya Göster", holdBarcode:"Barkodu çerçevenin ortasında tut.", cameraPreparing:"Kamera hazırlanıyor...", holdStill:"Barkodu çerçevenin ortasında sabit tut.",
+    box:"Koli", shelf:"Raf", total:"Toplam", stock:"Stok", currentStock:"Mevcut stok", stockIn:"+ Stok Girişi", stockOut:"− Stok Çıkışı", edit:"Düzenle",
+    stockInTitle:"Stok Girişi", stockOutTitle:"Stok Çıkışı", saveStockIn:"Stok Girişini Kaydet", saveStockOut:"Stok Çıkışını Kaydet",
+    noProduct:"Bu aramaya uygun ürün bulunamadı.", noRecord:"Kayıt bulunamadı.", loginWelcome:"Hoş geldin {name}. İşlemler artık adına kaydedilecek.",
+    enterName:"Personel adını en az 2 karakter gir.", noPermission:"Bu sekme için yetkin bulunmuyor.", invalidAmount:"Adet kısmına 1 veya daha büyük tam sayı gir.",
+    savedIn:"{amount} adet giriş {name} adına kaydedildi.", savedOut:"{amount} adet çıkış {name} adına kaydedildi.", insufficient:"Yeterli stok yok. Mevcut stok: {stock}",
+    barcodeRequired:"Barkodu okut veya numarayı yaz.", barcodeNotFound:"Bu barkodla kayıtlı ürün bulunamadı.", cameraUnsupported:"Bu cihaz kamera ile barkod taramayı desteklemiyor. Barkod numarasını yazabilirsin.", cameraDenied:"Kamera açılamadı. Kamera iznini kontrol et veya barkod numarasını elle gir.",
+    themeSaved:"Tema kaydedildi.", languageSaved:"Dil kaydedildi."
+  },
+  ar:{
+    appTitle:"📦 مستودع الصناديق", appSubtitle:"نظام مخزون الإطارات وشاشات الوسائط",
+    adminLogin:"دخول المدير", adminLogout:"خروج المدير", personnel:"موظف", admin:"مدير",
+    tabProduct:"إضافة منتج", tabOperation:"إدخال / إخراج المخزون", tabStockList:"قائمة المخزون", tabBoxes:"إدارة الصناديق", tabPayments:"المدفوعات", tabPersonnel:"الموظفون", tabMovements:"الحركات", tabSettings:"الإعدادات",
+    operationTitle:"إدخال / إخراج المخزون", operationHint:"ابحث عن المنتج، اختر إدخالاً أو إخراجاً، ثم أدخل الكمية. مخزون الإطار مع المقبس وبدونه يُحدّث بشكل منفصل.",
+    quickBarcode:"⚡ إخراج سريع بالباركود", quickBarcodeHint:"عند مسح الباركود تفتح شاشة إخراج المنتج مباشرة.", barcodePlaceholder:"امسح الباركود أو اكتب الرقم", findProduct:"البحث عن المنتج", scanCamera:"📷 المسح بالكاميرا",
+    searchProduct:"البحث عن منتج", searchPlaceholder:"ابحث بالمنتج أو السيارة أو الصندوق أو الرف...", productType:"نوع المنتج", all:"الكل", frame:"إطار", multimedia:"شاشة وسائط",
+    personnelProfile:"ملف الموظف", registeredPersonnel:"الموظف المسجل على هذا الجهاز:", changePersonnel:"تغيير الموظف",
+    languageTitle:"اللغة / Dil", languageHint:"اختر لغة التطبيق. سيبقى الاختيار محفوظاً على هذا الجهاز.", themeColors:"ألوان الواجهة", themeHint:"اللون الذي تختاره سيبقى محفوظاً على هذا الجهاز.", update:"تحديث",
+    themeMidnight:"ليلي برتقالي", themeOcean:"المحيط", themeForest:"الغابة", themeViolet:"ليلي بنفسجي", themeGraphite:"رمادي داكن", themeLight:"فاتح", themeDarkWarm:"داكن ودافئ", themeBlue:"درجات الأزرق", themeGreen:"درجات الأخضر", themePurple:"بنفسجي ووردي", themeGray:"رمادي بسيط", themeOpen:"واجهة فاتحة",
+    stockType:"نوع المخزون", withSocket:"مع مقبس", withoutSocket:"بدون مقبس", quantity:"الكمية", operationNote:"ملاحظة العملية (اختياري)", operationNotePlaceholder:"مثال: أُخذ للتركيب", saveOperation:"حفظ العملية", cancel:"إلغاء",
+    personnelLogin:"👋 دخول الموظف", personnelLoginHint:"يكفي تسجيل اسمك مرة واحدة. في المرات القادمة سيظهر اسمك جاهزاً، وستُسجل حركات المخزون باسمك.", fullName:"الاسم الكامل", namePlaceholder:"مثال: أحمد محمد", continueAsPersonnel:"المتابعة كموظف",
+    showBarcode:"وجّه الباركود نحو الكاميرا", holdBarcode:"ضع الباركود في منتصف الإطار.", cameraPreparing:"جارٍ تشغيل الكاميرا...", holdStill:"ثبّت الباركود في منتصف الإطار.",
+    box:"الصندوق", shelf:"الرف", total:"المجموع", stock:"المخزون", currentStock:"المخزون الحالي", stockIn:"+ إدخال مخزون", stockOut:"− إخراج مخزون", edit:"تعديل",
+    stockInTitle:"إدخال مخزون", stockOutTitle:"إخراج مخزون", saveStockIn:"حفظ إدخال المخزون", saveStockOut:"حفظ إخراج المخزون",
+    noProduct:"لم يتم العثور على منتج مطابق.", noRecord:"لا توجد سجلات.", loginWelcome:"أهلاً {name}. ستُسجل العمليات باسمك.",
+    enterName:"أدخل اسم الموظف بحرفين على الأقل.", noPermission:"ليس لديك صلاحية لفتح هذا القسم.", invalidAmount:"أدخل كمية صحيحة تساوي 1 أو أكثر.",
+    savedIn:"تم تسجيل إدخال {amount} قطعة باسم {name}.", savedOut:"تم تسجيل إخراج {amount} قطعة باسم {name}.", insufficient:"الكمية غير كافية. المخزون الحالي: {stock}",
+    barcodeRequired:"امسح الباركود أو اكتب رقمه.", barcodeNotFound:"لا يوجد منتج مسجل بهذا الباركود.", cameraUnsupported:"هذا الجهاز لا يدعم مسح الباركود بالكاميرا. يمكنك كتابة رقم الباركود.", cameraDenied:"تعذر فتح الكاميرا. تحقق من الإذن أو اكتب رقم الباركود يدوياً.",
+    themeSaved:"تم حفظ اللون.", languageSaved:"تم حفظ اللغة."
+  }
 };
 
 let supabaseClient = null;
@@ -37,6 +82,7 @@ let adminUnlocked = false;
 let adminPinSession = "";
 let currentAllowedTabs = new Set(DEFAULT_PERSONNEL_TABS);
 let personnelAdminRows = [];
+let currentLanguage = localStorage.getItem("koli_language") === "ar" ? "ar" : "tr";
 let movementRows = [];
 let scannerStream = null;
 let scannerFrameId = null;
@@ -59,6 +105,42 @@ function normalize(value){
   return String(value ?? "").toLocaleLowerCase("tr-TR");
 }
 
+function t(key, variables = {}){
+  let value = I18N[currentLanguage]?.[key] ?? I18N.tr[key] ?? key;
+  Object.entries(variables).forEach(([name, replacement]) => {
+    value = value.replaceAll(`{${name}}`, String(replacement));
+  });
+  return value;
+}
+
+function setLanguage(language, persist = true){
+  currentLanguage = language === "ar" ? "ar" : "tr";
+  document.documentElement.lang = currentLanguage;
+  document.documentElement.dir = currentLanguage === "ar" ? "rtl" : "ltr";
+  if(persist) localStorage.setItem("koli_language", currentLanguage);
+
+  document.querySelectorAll("[data-i18n]").forEach(element => {
+    element.textContent = t(element.dataset.i18n);
+  });
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(element => {
+    element.placeholder = t(element.dataset.i18nPlaceholder);
+  });
+  document.querySelectorAll("[data-language-choice]").forEach(button => {
+    const active = button.dataset.languageChoice === currentLanguage;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", active ? "true" : "false");
+  });
+
+  updateProfileUi();
+  if(allItems.length){
+    renderList(allItems);
+    renderOperationList();
+    renderBoxes();
+  }
+  if(personnelAdminRows.length) renderPersonnelAdmin();
+  if(movementRows.length) renderMovementReport();
+}
+
 function cleanBarcode(value){
   return String(value ?? "").trim().replace(/\s+/g, "");
 }
@@ -69,13 +151,13 @@ function createDeviceId(){
 }
 
 function updateProfileUi(){
-  const name = currentPersonnelName || "Personel";
+  const name = currentPersonnelName || t("personnel");
   $("profileName").textContent = name;
-  $("profileRole").textContent = adminUnlocked ? "Admin" : "Personel";
+  $("profileRole").textContent = adminUnlocked ? t("admin") : t("personnel");
   $("settingsPersonnelName").textContent = name;
   $("adminChangePinArea").classList.toggle("hidden", !adminUnlocked);
   $("btnAdminEntry").classList.toggle("adminActive", adminUnlocked);
-  $("btnAdminEntry").querySelector("b").textContent = adminUnlocked ? "Admin Çıkışı" : "Admin Girişi";
+  $("btnAdminEntry").querySelector("b").textContent = adminUnlocked ? t("adminLogout") : t("adminLogin");
   applyTabPermissions();
 }
 
@@ -112,7 +194,7 @@ function closePersonnelModal(){
 async function savePersonnelProfile(){
   const name = $("personnelNameInput").value.trim().replace(/\s+/g, " ");
   if(name.length < 2){
-    toast("Personel adını en az 2 karakter gir knk.");
+    toast(t("enterName"));
     return;
   }
   currentPersonnelName = name;
@@ -124,7 +206,7 @@ async function savePersonnelProfile(){
     await syncPersonnelProfile();
     updateProfileUi();
     switchTab("islem");
-    toast(`Hoş geldin ${name}. İşlemler artık adına kaydedilecek.`);
+    toast(t("loginWelcome", { name }));
   }finally{
     setButtonLoading(button, false);
   }
@@ -259,15 +341,15 @@ function clearForm(){
 
 function stockBadges(item){
   if(item.product_type === "cerceve"){
-    return `<span class="badge">Soketli: ${Number(item.socket_quantity || 0)}</span><span class="badge">Soketsiz: ${Number(item.no_socket_quantity || 0)}</span><span class="badge">Toplam: ${itemTotal(item)}</span>`;
+    return `<span class="badge">${t("withSocket")}: ${Number(item.socket_quantity || 0)}</span><span class="badge">${t("withoutSocket")}: ${Number(item.no_socket_quantity || 0)}</span><span class="badge">${t("total")}: ${itemTotal(item)}</span>`;
   }
-  return `<span class="badge">Stok: ${itemTotal(item)}</span>`;
+  return `<span class="badge">${t("stock")}: ${itemTotal(item)}</span>`;
 }
 
 function itemHtml(item){
   const id = escapeHtml(item.id);
   const name = escapeHtml(item.product_name || "İsimsiz Ürün");
-  const typeLabel = item.product_type === "cerceve" ? "Çerçeve" : "Multimedya";
+  const typeLabel = item.product_type === "cerceve" ? t("frame") : t("multimedia");
   const image = item.image_url ? `<img class="productImg" src="${escapeHtml(item.image_url)}" alt="${name}" loading="lazy" tabindex="0" role="button" data-action="view-image" data-image-url="${escapeHtml(item.image_url)}" />` : "";
 
   return `
@@ -280,15 +362,15 @@ function itemHtml(item){
       <div style="margin-top:8px">
         <span class="badge">${typeLabel}</span>
         ${item.barcode ? `<span class="badge">Barkod: ${escapeHtml(item.barcode)}</span>` : ""}
-        <span class="badge">Koli: ${escapeHtml(item.box_no || "-")}</span>
-        <span class="badge">Raf: ${escapeHtml(item.shelf_location || "-")}</span>
+        <span class="badge">${t("box")}: ${escapeHtml(item.box_no || "-")}</span>
+        <span class="badge">${t("shelf")}: ${escapeHtml(item.shelf_location || "-")}</span>
         ${stockBadges(item)}
       </div>
       ${item.note ? `<p style="margin-top:8px">${escapeHtml(item.note)}</p>` : ""}
       <div class="stockActions">
-        <button type="button" class="stockIn" data-action="stock-in" data-id="${id}">+ Stok Girişi</button>
-        <button type="button" class="stockOut" data-action="stock-out" data-id="${id}">− Stok Çıkışı</button>
-        ${canUseTab("urun") ? `<button type="button" data-action="edit" data-id="${id}">Düzenle</button>` : ""}
+        <button type="button" class="stockIn" data-action="stock-in" data-id="${id}">${t("stockIn")}</button>
+        <button type="button" class="stockOut" data-action="stock-out" data-id="${id}">${t("stockOut")}</button>
+        ${canUseTab("urun") ? `<button type="button" data-action="edit" data-id="${id}">${t("edit")}</button>` : ""}
       </div>
     </div>`;
 }
@@ -303,13 +385,13 @@ function operationItemHtml(item){
       </div>
       <div style="margin-top:8px">
         ${item.barcode ? `<span class="badge">Barkod: ${escapeHtml(item.barcode)}</span>` : ""}
-        <span class="badge">Koli: ${escapeHtml(item.box_no || "-")}</span>
-        <span class="badge">Raf: ${escapeHtml(item.shelf_location || "-")}</span>
+        <span class="badge">${t("box")}: ${escapeHtml(item.box_no || "-")}</span>
+        <span class="badge">${t("shelf")}: ${escapeHtml(item.shelf_location || "-")}</span>
         ${stockBadges(item)}
       </div>
       <div class="stockActions">
-        <button type="button" class="stockIn" data-action="stock-in" data-id="${id}">+ Stok Girişi</button>
-        <button type="button" class="stockOut" data-action="stock-out" data-id="${id}">− Stok Çıkışı</button>
+        <button type="button" class="stockIn" data-action="stock-in" data-id="${id}">${t("stockIn")}</button>
+        <button type="button" class="stockOut" data-action="stock-out" data-id="${id}">${t("stockOut")}</button>
       </div>
     </div>`;
 }
@@ -341,7 +423,7 @@ function renderStats(){
 }
 
 function renderList(list){
-  $("stockList").innerHTML = list.length ? list.map(itemHtml).join("") : `<p class="muted">Kayıt bulunamadı.</p>`;
+  $("stockList").innerHTML = list.length ? list.map(itemHtml).join("") : `<p class="muted">${t("noRecord")}</p>`;
 }
 
 function renderOperationList(){
@@ -353,7 +435,7 @@ function renderOperationList(){
     return typeMatches && queryMatches;
   });
 
-  $("operationList").innerHTML = filtered.length ? filtered.map(operationItemHtml).join("") : `<p class="muted">Bu aramaya uygun ürün bulunamadı.</p>`;
+  $("operationList").innerHTML = filtered.length ? filtered.map(operationItemHtml).join("") : `<p class="muted">${t("noProduct")}</p>`;
 }
 
 function renderBoxes(filterBox = ""){
@@ -756,9 +838,9 @@ async function deleteItem(){
 
 function operationStockHtml(item){
   if(item.product_type === "cerceve"){
-    return `<span class="badge">Soketli: ${Number(item.socket_quantity || 0)}</span><span class="badge">Soketsiz: ${Number(item.no_socket_quantity || 0)}</span><span class="badge">Toplam: ${itemTotal(item)}</span>`;
+    return `<span class="badge">${t("withSocket")}: ${Number(item.socket_quantity || 0)}</span><span class="badge">${t("withoutSocket")}: ${Number(item.no_socket_quantity || 0)}</span><span class="badge">${t("total")}: ${itemTotal(item)}</span>`;
   }
-  return `<span class="badge">Mevcut stok: ${itemTotal(item)}</span>`;
+  return `<span class="badge">${t("currentStock")}: ${itemTotal(item)}</span>`;
 }
 
 function openOperationModal(id, direction){
@@ -772,8 +854,8 @@ function openOperationModal(id, direction){
   const isStockIn = direction > 0;
   $("operationItemId").value = item.id;
   $("operationDirection").value = isStockIn ? "1" : "-1";
-  $("operationTitle").textContent = isStockIn ? "Stok Girişi" : "Stok Çıkışı";
-  $("operationProductInfo").textContent = `${item.product_name || "İsimsiz Ürün"} • Koli: ${item.box_no || "-"} • Raf: ${item.shelf_location || "-"}`;
+  $("operationTitle").textContent = isStockIn ? t("stockInTitle") : t("stockOutTitle");
+  $("operationProductInfo").textContent = `${item.product_name || "-"} • ${t("box")}: ${item.box_no || "-"} • ${t("shelf")}: ${item.shelf_location || "-"}`;
   $("operationCurrentStock").innerHTML = operationStockHtml(item);
   $("operationFrameTypeWrap").classList.toggle("hidden", item.product_type !== "cerceve");
   $("operationFrameType").value = "socket_quantity";
@@ -781,7 +863,7 @@ function openOperationModal(id, direction){
   $("operationNote").value = "";
 
   const confirmButton = $("btnConfirmOperation");
-  confirmButton.textContent = isStockIn ? "Stok Girişini Kaydet" : "Stok Çıkışını Kaydet";
+  confirmButton.textContent = isStockIn ? t("saveStockIn") : t("saveStockOut");
   confirmButton.className = isStockIn ? "stockIn" : "stockOut";
   $("operationModal").classList.remove("hidden");
   setTimeout(() => $("operationAmount").focus(), 50);
@@ -802,7 +884,7 @@ async function confirmStockOperation(){
   const amount = Number($("operationAmount").value);
   if(!item || ![1, -1].includes(direction)) return;
   if(!Number.isInteger(amount) || amount <= 0){
-    toast("Adet kısmına 1 veya daha büyük tam sayı gir.");
+    toast(t("invalidAmount"));
     return;
   }
 
@@ -812,14 +894,14 @@ async function confirmStockOperation(){
     const current = Number(item[variant] || 0);
     const next = current + (direction * amount);
     if(next < 0){
-      toast(`Yeterli stok yok. Seçilen türde mevcut stok: ${current}`);
+      toast(t("insufficient", { stock:current }));
       return;
     }
   }else{
     const current = Number(item.quantity || 0);
     const next = current + (direction * amount);
     if(next < 0){
-      toast(`Yeterli stok yok. Mevcut stok: ${current}`);
+      toast(t("insufficient", { stock:current }));
       return;
     }
   }
@@ -829,7 +911,7 @@ async function confirmStockOperation(){
   try{
     await applyStockMovement(item, direction, amount, variant, $("operationNote").value.trim());
     closeOperationModal();
-    toast(direction > 0 ? `${amount} adet giriş ${currentPersonnelName} adına kaydedildi.` : `${amount} adet çıkış ${currentPersonnelName} adına kaydedildi.`);
+    toast(direction > 0 ? t("savedIn", { amount, name:currentPersonnelName }) : t("savedOut", { amount, name:currentPersonnelName }));
     await loadAll();
   }catch(error){
     toast(error.message);
@@ -841,12 +923,12 @@ async function confirmStockOperation(){
 function findBarcodeProduct(rawCode){
   const code = cleanBarcode(rawCode);
   if(!code){
-    toast("Barkodu okut veya numarayı yaz knk.");
+    toast(t("barcodeRequired"));
     return;
   }
   const matches = allItems.filter(item => cleanBarcode(item.barcode) === code);
   if(!matches.length){
-    toast(`“${code}” barkoduyla kayıtlı ürün bulunamadı.`);
+    toast(t("barcodeNotFound"));
     return;
   }
   if(matches.length > 1){
@@ -872,7 +954,7 @@ async function scanBarcodeFrame(){
         return;
       }
     }catch(error){
-      $("scannerStatus").textContent = "Barkod okunamadı, kamerayı sabit tut.";
+      $("scannerStatus").textContent = t("holdStill");
     }finally{
       scannerBusy = false;
     }
@@ -882,7 +964,7 @@ async function scanBarcodeFrame(){
 
 async function openBarcodeScanner(){
   if(!("BarcodeDetector" in window)){
-    toast("Bu cihaz kamera ile barkod taramayı desteklemiyor. Barkod okuyucu kullanabilir veya numarayı yazabilirsin.");
+    toast(t("cameraUnsupported"));
     $("barcodeSearch").focus();
     return;
   }
@@ -892,7 +974,7 @@ async function openBarcodeScanner(){
   }
 
   $("scannerModal").classList.remove("hidden");
-  $("scannerStatus").textContent = "Kamera hazırlanıyor...";
+  $("scannerStatus").textContent = t("cameraPreparing");
   try{
     scannerDetector = new BarcodeDetector();
     scannerStream = await navigator.mediaDevices.getUserMedia({
@@ -901,11 +983,11 @@ async function openBarcodeScanner(){
     });
     $("scannerVideo").srcObject = scannerStream;
     await $("scannerVideo").play();
-    $("scannerStatus").textContent = "Barkodu çerçevenin ortasında sabit tut.";
+    $("scannerStatus").textContent = t("holdStill");
     scanBarcodeFrame();
   }catch(error){
     closeBarcodeScanner();
-    toast("Kamera açılamadı. Kamera iznini kontrol et veya barkod numarasını elle gir.");
+    toast(t("cameraDenied"));
   }
 }
 
@@ -1053,12 +1135,12 @@ function renderPersonnelAdmin(){
           <div><h3>👤 ${escapeHtml(person.personnel_name)}</h3><p class="muted">Son giriş: ${escapeHtml(lastSeen)}</p></div>
           <span class="badge">${person.is_active === false ? "Pasif" : "Aktif"}</span>
         </div>
-        <div class="fixedPermissions"><span class="badge permissionFixed">✓ Stok Giriş / Çıkış</span><span class="badge permissionFixed">✓ Ayarlar</span></div>
+        <div class="fixedPermissions"><span class="badge permissionFixed">✓ ${t("tabOperation")}</span><span class="badge permissionFixed">✓ ${t("tabSettings")}</span></div>
         <div class="permissionGrid">
           ${GRANTABLE_TABS.map(tab => `
             <label class="permissionChoice">
               <input type="checkbox" data-tab-permission="${tab}" ${allowed.has(tab) ? "checked" : ""} />
-              <span>${escapeHtml(TAB_LABELS[tab])}</span>
+              <span>${escapeHtml(t(TAB_LABELS[tab]))}</span>
             </label>`).join("")}
         </div>
         <button type="button" class="primary" data-action="save-personnel-tabs" data-id="${escapeHtml(person.id)}">Sekme İzinlerini Kaydet</button>
@@ -1101,7 +1183,7 @@ function movementTypeLabel(value){
 }
 
 function formatMovementDate(value){
-  return new Intl.DateTimeFormat("tr-TR", { dateStyle:"short", timeStyle:"short" }).format(new Date(value));
+  return new Intl.DateTimeFormat(currentLanguage === "ar" ? "ar-SY" : "tr-TR", { dateStyle:"short", timeStyle:"short" }).format(new Date(value));
 }
 
 function filteredMovements(){
@@ -1322,7 +1404,14 @@ function setupEvents(){
   document.querySelectorAll("[data-theme-choice]").forEach(button => {
     button.addEventListener("click", () => {
       applyTheme(button.dataset.themeChoice);
-      toast("Tema kaydedildi.");
+      toast(t("themeSaved"));
+    });
+  });
+
+  document.querySelectorAll("[data-language-choice]").forEach(button => {
+    button.addEventListener("click", () => {
+      setLanguage(button.dataset.languageChoice);
+      toast(t("languageSaved"));
     });
   });
 
@@ -1362,6 +1451,7 @@ if("serviceWorker" in navigator){
 }
 
 applyTheme(localStorage.getItem("koli_theme") || "midnight", false);
+setLanguage(currentLanguage, false);
 initPersonnelProfile();
 setupEvents();
 setReportPeriod("today");

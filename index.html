@@ -9,17 +9,19 @@
   <link rel="stylesheet" href="style.css" />
   <script>
     document.documentElement.dataset.theme = localStorage.getItem("koli_theme") || "midnight";
+    document.documentElement.lang = localStorage.getItem("koli_language") === "ar" ? "ar" : "tr";
+    document.documentElement.dir = document.documentElement.lang === "ar" ? "rtl" : "ltr";
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <header class="topbar">
     <div>
-      <h1>📦 Koli Depo</h1>
-      <p>Çerçeve & Multimedya stok sistemi</p>
+      <h1 data-i18n="appTitle">📦 Koli Depo</h1>
+      <p data-i18n="appSubtitle">Çerçeve & Multimedya stok sistemi</p>
     </div>
     <div class="topbarRight">
-      <button type="button" id="btnAdminEntry" class="adminEntryButton"><span>🔐</span><b>Admin Girişi</b></button>
+      <button type="button" id="btnAdminEntry" class="adminEntryButton"><span>🔐</span><b data-i18n="adminLogin">Admin Girişi</b></button>
       <button type="button" id="btnProfile" class="profileButton" title="Personel profili">
         <span>👤</span><b id="profileName">Personel</b><small id="profileRole">Personel</small>
       </button>
@@ -42,14 +44,14 @@
     </section>
 
     <nav class="tabs">
-      <button class="tab permissionTab hidden" data-tab="urun">Ürün Ekle</button>
-      <button class="tab active" data-tab="islem">Stok Giriş / Çıkış</button>
-      <button class="tab permissionTab hidden" data-tab="liste">Stok Listesi</button>
-      <button class="tab permissionTab hidden" data-tab="koli">Koli Yönetimi</button>
-      <button class="tab permissionTab hidden" data-tab="odeme">Ödemeler</button>
-      <button id="personnelTabButton" class="tab hidden" data-tab="personel">Personeller</button>
-      <button id="movementsTabButton" class="tab hidden" data-tab="hareket">Hareketler</button>
-      <button class="tab" data-tab="ayar">Ayarlar</button>
+      <button class="tab permissionTab hidden" data-tab="urun" data-i18n="tabProduct">Ürün Ekle</button>
+      <button class="tab active" data-tab="islem" data-i18n="tabOperation">Stok Giriş / Çıkış</button>
+      <button class="tab permissionTab hidden" data-tab="liste" data-i18n="tabStockList">Stok Listesi</button>
+      <button class="tab permissionTab hidden" data-tab="koli" data-i18n="tabBoxes">Koli Yönetimi</button>
+      <button class="tab permissionTab hidden" data-tab="odeme" data-i18n="tabPayments">Ödemeler</button>
+      <button id="personnelTabButton" class="tab hidden" data-tab="personel" data-i18n="tabPersonnel">Personeller</button>
+      <button id="movementsTabButton" class="tab hidden" data-tab="hareket" data-i18n="tabMovements">Hareketler</button>
+      <button class="tab" data-tab="ayar" data-i18n="tabSettings">Ayarlar</button>
     </nav>
 
     <section id="tab-urun" class="panel">
@@ -139,28 +141,28 @@
 
     <section id="tab-islem" class="panel active">
       <div class="card">
-        <h2>Stok Giriş / Çıkış</h2>
-        <p class="muted sectionHint">Ürünü bul, giriş veya çıkış seç ve adedi gir. Çerçevelerde soketli/soketsiz stok ayrı güncellenir.</p>
+        <h2 data-i18n="operationTitle">Stok Giriş / Çıkış</h2>
+        <p class="muted sectionHint" data-i18n="operationHint">Ürünü bul, giriş veya çıkış seç ve adedi gir. Çerçevelerde soketli/soketsiz stok ayrı güncellenir.</p>
         <div class="barcodeBox">
           <div>
-            <h3>⚡ Barkodla Hızlı Çıkış</h3>
-            <p class="muted">Barkodu okutunca ürün doğrudan çıkış ekranında açılır.</p>
+            <h3 data-i18n="quickBarcode">⚡ Barkodla Hızlı Çıkış</h3>
+            <p class="muted" data-i18n="quickBarcodeHint">Barkodu okutunca ürün doğrudan çıkış ekranında açılır.</p>
           </div>
           <div class="barcodeActions">
-            <input id="barcodeSearch" placeholder="Barkodu okut veya numarayı yaz" autocomplete="off" inputmode="numeric" />
-            <button type="button" id="btnBarcodeFind" class="primary">Ürünü Bul</button>
-            <button type="button" id="btnBarcodeCamera">📷 Kamera ile Tara</button>
+            <input id="barcodeSearch" data-i18n-placeholder="barcodePlaceholder" placeholder="Barkodu okut veya numarayı yaz" autocomplete="off" inputmode="numeric" />
+            <button type="button" id="btnBarcodeFind" class="primary" data-i18n="findProduct">Ürünü Bul</button>
+            <button type="button" id="btnBarcodeCamera" data-i18n="scanCamera">📷 Kamera ile Tara</button>
           </div>
         </div>
         <div class="grid operationFilters">
-          <label>Ürün Ara
-            <input id="operationSearch" placeholder="Ürün, araç, koli no veya raf ara..." autocomplete="off" />
+          <label><span data-i18n="searchProduct">Ürün Ara</span>
+            <input id="operationSearch" data-i18n-placeholder="searchPlaceholder" placeholder="Ürün, araç, koli no veya raf ara..." autocomplete="off" />
           </label>
-          <label>Ürün Tipi
+          <label><span data-i18n="productType">Ürün Tipi</span>
             <select id="operationTypeFilter">
-              <option value="tum">Tümü</option>
-              <option value="cerceve">Çerçeve</option>
-              <option value="multimedya">Multimedya</option>
+              <option value="tum" data-i18n="all">Tümü</option>
+              <option value="cerceve" data-i18n="frame">Çerçeve</option>
+              <option value="multimedya" data-i18n="multimedia">Multimedya</option>
             </select>
           </label>
         </div>
@@ -253,10 +255,10 @@
     <section id="tab-ayar" class="panel">
       <div class="settingsGrid">
         <div class="card">
-          <h2>Personel Profili</h2>
-          <p class="muted sectionHint">Bu cihazda kayıtlı personel: <b id="settingsPersonnelName">-</b></p>
+          <h2 data-i18n="personnelProfile">Personel Profili</h2>
+          <p class="muted sectionHint"><span data-i18n="registeredPersonnel">Bu cihazda kayıtlı personel:</span> <b id="settingsPersonnelName">-</b></p>
           <div class="actions">
-            <button type="button" id="btnChangePersonnel">Personeli Değiştir</button>
+            <button type="button" id="btnChangePersonnel" data-i18n="changePersonnel">Personeli Değiştir</button>
           </div>
           <div id="adminChangePinArea" class="subcard hidden">
             <h3>Admin PIN Değiştir</h3>
@@ -268,22 +270,30 @@
           </div>
         </div>
         <div class="card">
-          <h2>Tema Renkleri</h2>
-          <p class="muted sectionHint">Seçtiğin tema bu cihazda kayıtlı kalır.</p>
+          <h2 data-i18n="languageTitle">Dil / اللغة</h2>
+          <p class="muted sectionHint" data-i18n="languageHint">Uygulama dilini seç. Seçim bu cihazda kayıtlı kalır.</p>
+          <div class="languageGrid">
+            <button type="button" class="languageChoice" data-language-choice="tr">🇹🇷 Türkçe</button>
+            <button type="button" class="languageChoice" data-language-choice="ar">🇸🇾 العربية</button>
+          </div>
+        </div>
+        <div class="card">
+          <h2 data-i18n="themeColors">Tema Renkleri</h2>
+          <p class="muted sectionHint" data-i18n="themeHint">Seçtiğin tema bu cihazda kayıtlı kalır.</p>
           <div class="themeGrid" id="themeGrid">
-            <button type="button" class="themeChoice" data-theme-choice="midnight"><span class="themeSwatch swatchMidnight"></span><span><b>Turuncu Gece</b><small>Koyu ve sıcak</small></span></button>
-            <button type="button" class="themeChoice" data-theme-choice="ocean"><span class="themeSwatch swatchOcean"></span><span><b>Okyanus</b><small>Mavi tonlar</small></span></button>
-            <button type="button" class="themeChoice" data-theme-choice="forest"><span class="themeSwatch swatchForest"></span><span><b>Orman</b><small>Yeşil tonlar</small></span></button>
-            <button type="button" class="themeChoice" data-theme-choice="violet"><span class="themeSwatch swatchViolet"></span><span><b>Mor Gece</b><small>Mor ve pembe</small></span></button>
-            <button type="button" class="themeChoice" data-theme-choice="graphite"><span class="themeSwatch swatchGraphite"></span><span><b>Grafit</b><small>Sade gri</small></span></button>
-            <button type="button" class="themeChoice" data-theme-choice="light"><span class="themeSwatch swatchLight"></span><span><b>Aydınlık</b><small>Açık tema</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="midnight"><span class="themeSwatch swatchMidnight"></span><span><b data-i18n="themeMidnight">Turuncu Gece</b><small data-i18n="themeDarkWarm">Koyu ve sıcak</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="ocean"><span class="themeSwatch swatchOcean"></span><span><b data-i18n="themeOcean">Okyanus</b><small data-i18n="themeBlue">Mavi tonlar</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="forest"><span class="themeSwatch swatchForest"></span><span><b data-i18n="themeForest">Orman</b><small data-i18n="themeGreen">Yeşil tonlar</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="violet"><span class="themeSwatch swatchViolet"></span><span><b data-i18n="themeViolet">Mor Gece</b><small data-i18n="themePurple">Mor ve pembe</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="graphite"><span class="themeSwatch swatchGraphite"></span><span><b data-i18n="themeGraphite">Grafit</b><small data-i18n="themeGray">Sade gri</small></span></button>
+            <button type="button" class="themeChoice" data-theme-choice="light"><span class="themeSwatch swatchLight"></span><span><b data-i18n="themeLight">Aydınlık</b><small data-i18n="themeOpen">Açık tema</small></span></button>
           </div>
         </div>
       </div>
     </section>
   </main>
 
-  <button id="updateBtn" class="update hidden">Güncelle</button>
+  <button id="updateBtn" class="update hidden" data-i18n="update">Güncelle</button>
   <div id="toast" class="toast hidden"></div>
 
   <div id="imageModal" class="imageModal hidden">
@@ -321,23 +331,27 @@
       <input id="operationItemId" type="hidden" />
       <input id="operationDirection" type="hidden" />
       <div id="operationCurrentStock" class="currentStock"></div>
-      <label id="operationFrameTypeWrap" class="hidden">Stok Türü
+      <label id="operationFrameTypeWrap" class="hidden"><span data-i18n="stockType">Stok Türü</span>
         <select id="operationFrameType">
-          <option value="socket_quantity">Soketli</option>
-          <option value="no_socket_quantity">Soketsiz</option>
+          <option value="socket_quantity" data-i18n="withSocket">Soketli</option>
+          <option value="no_socket_quantity" data-i18n="withoutSocket">Soketsiz</option>
         </select>
       </label>
-      <label>Adet<input id="operationAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
-      <label>İşlem Notu (isteğe bağlı)<input id="operationNote" placeholder="Örn: Montaj için alındı" /></label>
-      <div class="actions"><button type="button" id="btnConfirmOperation" class="primary">İşlemi Kaydet</button><button type="button" id="btnCancelOperation">Vazgeç</button></div>
+      <label><span data-i18n="quantity">Adet</span><input id="operationAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
+      <label><span data-i18n="operationNote">İşlem Notu (isteğe bağlı)</span><input id="operationNote" data-i18n-placeholder="operationNotePlaceholder" placeholder="Örn: Montaj için alındı" /></label>
+      <div class="actions"><button type="button" id="btnConfirmOperation" class="primary" data-i18n="saveOperation">İşlemi Kaydet</button><button type="button" id="btnCancelOperation" data-i18n="cancel">Vazgeç</button></div>
     </div>
   </div>
   <div id="personnelModal" class="editModal hidden">
     <div class="editCard personnelCard">
-      <h2>👋 Personel Girişi</h2>
-      <p class="muted sectionHint">Adını bir kez kaydetmen yeterli. Sonraki açılışlarda adın hazır gelecek; devam dediğinde stok işlemleri senin adına tutulacak.</p>
-      <label>Ad Soyad<input id="personnelNameInput" maxlength="60" autocomplete="name" placeholder="Örn: Ahmet Yılmaz" /></label>
-      <div class="actions"><button type="button" id="btnSavePersonnel" class="primary">Personel Olarak Devam Et</button><button type="button" id="btnCancelPersonnel" class="hidden">Vazgeç</button></div>
+      <h2 data-i18n="personnelLogin">👋 Personel Girişi</h2>
+      <p class="muted sectionHint" data-i18n="personnelLoginHint">Adını bir kez kaydetmen yeterli. Sonraki açılışlarda adın hazır gelecek; devam dediğinde stok işlemleri senin adına tutulacak.</p>
+      <div class="languageGrid loginLanguageGrid">
+        <button type="button" class="languageChoice" data-language-choice="tr">🇹🇷 Türkçe</button>
+        <button type="button" class="languageChoice" data-language-choice="ar">🇸🇾 العربية</button>
+      </div>
+      <label><span data-i18n="fullName">Ad Soyad</span><input id="personnelNameInput" maxlength="60" autocomplete="name" data-i18n-placeholder="namePlaceholder" placeholder="Örn: Ahmet Yılmaz" /></label>
+      <div class="actions"><button type="button" id="btnSavePersonnel" class="primary" data-i18n="continueAsPersonnel">Personel Olarak Devam Et</button><button type="button" id="btnCancelPersonnel" class="hidden" data-i18n="cancel">Vazgeç</button></div>
     </div>
   </div>
   <div id="adminModal" class="editModal hidden">
@@ -350,9 +364,9 @@
   </div>
   <div id="scannerModal" class="editModal hidden">
     <div class="editCard scannerCard">
-      <div class="itemHead"><div><h2>Barkodu Kameraya Göster</h2><p class="muted">Barkodu çerçevenin ortasında tut.</p></div><button type="button" id="btnCloseScanner">×</button></div>
+      <div class="itemHead"><div><h2 data-i18n="showBarcode">Barkodu Kameraya Göster</h2><p class="muted" data-i18n="holdBarcode">Barkodu çerçevenin ortasında tut.</p></div><button type="button" id="btnCloseScanner">×</button></div>
       <div class="scannerViewport"><video id="scannerVideo" playsinline muted></video><div class="scannerGuide"></div></div>
-      <p id="scannerStatus" class="muted">Kamera hazırlanıyor...</p>
+      <p id="scannerStatus" class="muted" data-i18n="cameraPreparing">Kamera hazırlanıyor...</p>
     </div>
   </div>
   <script src="app.js"></script>
