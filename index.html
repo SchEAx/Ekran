@@ -18,7 +18,12 @@
       <h1>📦 Koli Depo</h1>
       <p>Çerçeve & Multimedya stok sistemi</p>
     </div>
-    <div class="powered">Powered by <b>SchEAx & GPT</b></div>
+    <div class="topbarRight">
+      <button type="button" id="btnProfile" class="profileButton" title="Personel profili">
+        <span>👤</span><b id="profileName">Personel</b><small id="profileRole">Personel</small>
+      </button>
+      <div class="powered">Powered by <b>SchEAx & GPT</b></div>
+    </div>
   </header>
 
   <main class="container">
@@ -36,15 +41,16 @@
     </section>
 
     <nav class="tabs">
-      <button class="tab active" data-tab="urun">Ürün Ekle</button>
-      <button class="tab" data-tab="islem">Stok Giriş / Çıkış</button>
+      <button class="tab" data-tab="urun">Ürün Ekle</button>
+      <button class="tab active" data-tab="islem">Stok Giriş / Çıkış</button>
       <button class="tab" data-tab="liste">Stok Listesi</button>
       <button class="tab" data-tab="koli">Koli Yönetimi</button>
       <button class="tab" data-tab="odeme">Ödemeler</button>
+      <button id="movementsTabButton" class="tab hidden" data-tab="hareket">Hareketler</button>
       <button class="tab" data-tab="ayar">Ayarlar</button>
     </nav>
 
-    <section id="tab-urun" class="panel active">
+    <section id="tab-urun" class="panel">
       <div class="card">
         <h2>Yeni Stok Kaydı</h2>
         <div class="grid">
@@ -59,6 +65,9 @@
           </label>
           <label>Koli No
             <input id="boxNo" placeholder="K-001" />
+          </label>
+          <label>Barkod
+            <input id="barcode" placeholder="Barkodu okut veya yaz" autocomplete="off" inputmode="numeric" />
           </label>
           <label>Raf Konumu
             <input id="shelfLocation" placeholder="A-02 / Üst Raf" />
@@ -126,10 +135,21 @@
       </div>
     </section>
 
-    <section id="tab-islem" class="panel">
+    <section id="tab-islem" class="panel active">
       <div class="card">
         <h2>Stok Giriş / Çıkış</h2>
         <p class="muted sectionHint">Ürünü bul, giriş veya çıkış seç ve adedi gir. Çerçevelerde soketli/soketsiz stok ayrı güncellenir.</p>
+        <div class="barcodeBox">
+          <div>
+            <h3>⚡ Barkodla Hızlı Çıkış</h3>
+            <p class="muted">Barkodu okutunca ürün doğrudan çıkış ekranında açılır.</p>
+          </div>
+          <div class="barcodeActions">
+            <input id="barcodeSearch" placeholder="Barkodu okut veya numarayı yaz" autocomplete="off" inputmode="numeric" />
+            <button type="button" id="btnBarcodeFind" class="primary">Ürünü Bul</button>
+            <button type="button" id="btnBarcodeCamera">📷 Kamera ile Tara</button>
+          </div>
+        </div>
         <div class="grid operationFilters">
           <label>Ürün Ara
             <input id="operationSearch" placeholder="Ürün, araç, koli no veya raf ara..." autocomplete="off" />
@@ -183,8 +203,63 @@
       </div>
     </section>
 
+    <section id="tab-hareket" class="panel">
+      <div class="card">
+        <div class="reportHead">
+          <div><h2>Personel Hareketleri</h2><p class="muted sectionHint">Bu alan yalnızca admin PIN’i ile açılır.</p></div>
+          <button type="button" id="btnExportMovements">CSV İndir</button>
+        </div>
+        <div class="periodButtons">
+          <button type="button" id="btnToday" class="primary">Bugün</button>
+          <button type="button" id="btnThisWeek">Bu Hafta</button>
+        </div>
+        <div class="grid reportFilters">
+          <label>Başlangıç<input id="movementFrom" type="datetime-local" /></label>
+          <label>Bitiş<input id="movementTo" type="datetime-local" /></label>
+          <label>Personel
+            <select id="movementPersonnel"><option value="">Tüm Personel</option></select>
+          </label>
+        </div>
+        <button type="button" id="btnLoadMovements" class="primary">Raporu Getir</button>
+
+        <div class="quickstats movementStats">
+          <div><b id="movementCount">0</b><span>İşlem</span></div>
+          <div><b id="movementInTotal">0</b><span>Toplam Giriş</span></div>
+          <div><b id="movementOutTotal">0</b><span>Toplam Çıkış</span></div>
+          <div><b id="movementPersonnelCount">0</b><span>Personel</span></div>
+        </div>
+
+        <h3 class="reportTitle">Personel Özeti</h3>
+        <div id="personnelSummary" class="tableWrap"></div>
+        <h3 class="reportTitle">Personel / Ürün Dağılımı</h3>
+        <div id="productSummary" class="tableWrap"></div>
+        <h3 class="reportTitle">Tüm Hareketler</h3>
+        <div id="movementList" class="list"></div>
+      </div>
+    </section>
+
     <section id="tab-ayar" class="panel">
       <div class="settingsGrid">
+        <div class="card">
+          <h2>Personel & Admin</h2>
+          <p class="muted sectionHint">Bu cihazda kayıtlı personel: <b id="settingsPersonnelName">-</b></p>
+          <div class="actions">
+            <button type="button" id="btnChangePersonnel">Personeli Değiştir</button>
+            <button type="button" id="btnAdminLogout" class="danger hidden">Admin Modunu Kapat</button>
+          </div>
+          <div id="adminLoginArea" class="subcard">
+            <label>Admin PIN<input id="adminPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Admin PIN" /></label>
+            <button type="button" id="btnAdminLogin" class="primary">Admin Girişi</button>
+          </div>
+          <div id="adminChangePinArea" class="subcard hidden">
+            <h3>Admin PIN Değiştir</h3>
+            <div class="grid twoCols">
+              <label>Mevcut PIN<input id="currentAdminPin" type="password" inputmode="numeric" /></label>
+              <label>Yeni PIN<input id="newAdminPin" type="password" inputmode="numeric" minlength="4" /></label>
+            </div>
+            <button type="button" id="btnChangeAdminPin">PIN’i Değiştir</button>
+          </div>
+        </div>
         <div class="card">
           <h2>Tema Renkleri</h2>
           <p class="muted sectionHint">Seçtiğin tema bu cihazda kayıtlı kalır.</p>
@@ -220,7 +295,7 @@
       <div class="itemHead"><h2>Stok Düzenle</h2><button type="button" id="btnCloseEdit">×</button></div>
       <input id="editId" type="hidden" />
       <label>Ürün Adı<input id="editProductName" /></label>
-      <div class="grid"><label>Koli No<input id="editBoxNo" /></label><label>Raf Konumu<input id="editShelfLocation" /></label></div>
+      <div class="grid"><label>Koli No<input id="editBoxNo" /></label><label>Raf Konumu<input id="editShelfLocation" /></label><label>Barkod<input id="editBarcode" autocomplete="off" inputmode="numeric" /></label></div>
       <div id="editFrameStock" class="subcard hidden"><div class="grid twoCols"><label>Soketli Stok<input id="editSocketQuantity" type="number" min="0" /></label><label>Soketsiz Stok<input id="editNoSocketQuantity" type="number" min="0" /></label></div></div>
       <div id="editGeneralStock" class="subcard hidden"><label>Toplam Stok<input id="editQuantity" type="number" min="0" /></label></div>
       <div class="imagePick editImagePick">
@@ -253,7 +328,23 @@
         </select>
       </label>
       <label>Adet<input id="operationAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
+      <label>İşlem Notu (isteğe bağlı)<input id="operationNote" placeholder="Örn: Montaj için alındı" /></label>
       <div class="actions"><button type="button" id="btnConfirmOperation" class="primary">İşlemi Kaydet</button><button type="button" id="btnCancelOperation">Vazgeç</button></div>
+    </div>
+  </div>
+  <div id="personnelModal" class="editModal hidden">
+    <div class="editCard personnelCard">
+      <h2>👋 Personel Girişi</h2>
+      <p class="muted sectionHint">Adını bir kez girmen yeterli. Bundan sonraki stok giriş/çıkışları senin adına kaydedilecek.</p>
+      <label>Ad Soyad<input id="personnelNameInput" maxlength="60" autocomplete="name" placeholder="Örn: Ahmet Yılmaz" /></label>
+      <div class="actions"><button type="button" id="btnSavePersonnel" class="primary">Bu Cihaza Kaydet</button><button type="button" id="btnCancelPersonnel" class="hidden">Vazgeç</button></div>
+    </div>
+  </div>
+  <div id="scannerModal" class="editModal hidden">
+    <div class="editCard scannerCard">
+      <div class="itemHead"><div><h2>Barkodu Kameraya Göster</h2><p class="muted">Barkodu çerçevenin ortasında tut.</p></div><button type="button" id="btnCloseScanner">×</button></div>
+      <div class="scannerViewport"><video id="scannerVideo" playsinline muted></video><div class="scannerGuide"></div></div>
+      <p id="scannerStatus" class="muted">Kamera hazırlanıyor...</p>
     </div>
   </div>
   <script src="app.js"></script>
