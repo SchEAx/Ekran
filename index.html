@@ -185,7 +185,7 @@
           </div>
         </div>
         <div class="excelHelp">
-          <b>Barkod toplu düzenleme:</b> Excel'deki <b>ID (DOKUNMA)</b> sütununu değiştirme. <b>Barkod</b> sütununu doldurup dosyayı geri yükle. Barkodlar metin olarak dışa aktarılır; başında 0 varsa korunur. <b>Excel yükleme yalnızca Sabit Admin SchEAx hesabında açıktır.</b>
+          <b>Barkod toplu düzenleme:</b> Excel'deki <b>ID (DOKUNMA)</b> sütununu değiştirme. Aynı ürün farklı koli/raflarda bulunuyorsa bu satırlara <b>aynı barkodu</b> verebilirsin. Barkod okutulduğunda birden fazla konum varsa personel işlem yapacağı koli/rafı seçer. <b>Excel yükleme yalnızca Sabit Admin SchEAx hesabında açıktır.</b>
           <span id="excelStatus" class="muted"></span>
         </div>
         <div id="stockList" class="list"></div>
@@ -387,6 +387,11 @@
     <div class="editCard barcodeActionCard">
       <div class="itemHead"><div><h2 id="barcodeActionProductName">Barkodlu Ürün</h2><p id="barcodeActionMeta" class="muted"></p></div><button type="button" id="btnCloseBarcodeAction">×</button></div>
       <input id="barcodeActionItemId" type="hidden" />
+      <div id="barcodeLocationWrap" class="barcodeLocationWrap hidden">
+        <h3 data-i18n="locationSelectTitle">Koli / Raf Seç</h3>
+        <p id="barcodeLocationHint" class="muted">Bu barkod birden fazla konumda kayıtlı. İşlem yapacağın koli veya rafı seç.</p>
+        <div id="barcodeLocationList" class="barcodeLocationList"></div>
+      </div>
       <div id="barcodeActionStock" class="currentStock"></div>
       <label id="barcodeActionFrameTypeWrap" class="hidden"><span data-i18n="stockType">Stok Türü</span>
         <select id="barcodeActionFrameType">

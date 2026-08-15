@@ -1,4 +1,4 @@
-const APP_VERSION = "2.6.0";
+const APP_VERSION = "2.7.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -44,6 +44,7 @@ const I18N = {
     enterName:"Personel adını en az 2 karakter gir.", noPermission:"Bu sekme için yetkin bulunmuyor.", invalidAmount:"Adet kısmına 1 veya daha büyük tam sayı gir.",
     savedIn:"{amount} adet giriş {name} adına kaydedildi.", savedOut:"{amount} adet çıkış {name} adına kaydedildi.", insufficient:"Yeterli stok yok. Mevcut stok: {stock}",
     barcodeRequired:"Barkodu okut veya numarayı yaz.", barcodeNotFound:"Bu barkodla kayıtlı ürün bulunamadı.", cameraUnsupported:"Bu cihaz kamera ile barkod taramayı desteklemiyor. Barkod numarasını yazabilirsin.", cameraDenied:"Kamera açılamadı. Kamera iznini kontrol et veya barkod numarasını elle gir.",
+    locationSelectTitle:"Koli / Raf Seç", locationSelectHint:"Bu barkod birden fazla konumda kayıtlı. İşlem yapacağın koli veya rafı seç.", locationCount:"{count} konum", selectLocationFirst:"Önce işlem yapılacak koli / rafı seç.",
     themeSaved:"Tema kaydedildi.", languageSaved:"Dil kaydedildi."
   },
   ar:{
@@ -65,6 +66,7 @@ const I18N = {
     enterName:"أدخل اسم الموظف بحرفين على الأقل.", noPermission:"ليس لديك صلاحية لفتح هذا القسم.", invalidAmount:"أدخل كمية صحيحة تساوي 1 أو أكثر.",
     savedIn:"تم تسجيل إدخال {amount} قطعة باسم {name}.", savedOut:"تم تسجيل إخراج {amount} قطعة باسم {name}.", insufficient:"الكمية غير كافية. المخزون الحالي: {stock}",
     barcodeRequired:"امسح الباركود أو اكتب رقمه.", barcodeNotFound:"لا يوجد منتج مسجل بهذا الباركود.", cameraUnsupported:"هذا الجهاز لا يدعم مسح الباركود بالكاميرا. يمكنك كتابة رقم الباركود.", cameraDenied:"تعذر فتح الكاميرا. تحقق من الإذن أو اكتب رقم الباركود يدوياً.",
+    locationSelectTitle:"اختر الصندوق / الرف", locationSelectHint:"هذا الباركود موجود في أكثر من موقع. اختر الصندوق أو الرف الذي ستجري عليه العملية.", locationCount:"{count} مواقع", selectLocationFirst:"اختر الصندوق / الرف أولاً.",
     themeSaved:"تم حفظ اللون.", languageSaved:"تم حفظ اللغة."
   }
 };
@@ -646,9 +648,10 @@ async function exportStockExcel(){
       ["Ekran & Çerçeve - Excel Kullanımı"],
       ["1", "ID (DOKUNMA) sütununu değiştirme veya silme. Mevcut kaydı bulmak için kullanılır."],
       ["2", "Toplu barkod vermek için yalnızca Barkod sütununu doldurman yeterli."],
-      ["3", "Aynı barkod iki farklı üründe kullanılamaz; yüklemede kontrol edilir."],
-      ["4", "Mevcut stok miktarlarını Excel'de değiştirirsen farklar stok hareketi olarak kaydedilir."],
-      ["5", "Yeni ürün eklemek istersen ID'yi boş bırak; Ürün Tipi, Ürün Adı ve Koli No alanlarını doldur."]
+      ["3", "Aynı ürün farklı koli/raflarda ise aynı barkodu birden fazla satırda kullanabilirsin. Barkod okutunca konum seçilir."],
+      ["4", "Farklı ürünlere yanlışlıkla aynı barkodu vermemeye dikkat et; program aynı barkodun tüm konumlarını birlikte gösterecektir."],
+      ["5", "Mevcut stok miktarlarını Excel'de değiştirirsen farklar stok hareketi olarak kaydedilir."],
+      ["6", "Yeni ürün eklemek istersen ID'yi boş bırak; Ürün Tipi, Ürün Adı ve Koli No alanlarını doldur."]
     ];
     const infoSheet = XLSX.utils.aoa_to_sheet(infoRows);
     infoSheet["!cols"] = [{wch:10},{wch:100}];
@@ -780,23 +783,6 @@ function buildImportedItem(row, rowNumber, headerMap, existingItem){
   return { metadata, desiredSocket, desiredNoSocket, desiredQuantity };
 }
 
-function validateFinalBarcodes(importRows, currentItems){
-  const finalByKey = new Map(currentItems.map(item => [String(item.id), cleanBarcode(item.barcode)]));
-  importRows.forEach((entry, index) => {
-    const key = entry.id ? String(entry.id) : `__new_${index}`;
-    finalByKey.set(key, cleanBarcode(entry.metadata.barcode));
-  });
-
-  const owners = new Map();
-  for(const [key, barcode] of finalByKey.entries()){
-    if(!barcode) continue;
-    if(owners.has(barcode) && owners.get(barcode) !== key){
-      throw new Error(`Aynı barkod iki üründe kullanılmış: ${barcode}`);
-    }
-    owners.set(barcode, key);
-  }
-}
-
 async function applyImportedStockDifference(item, imported){
   if(item.product_type === "cerceve"){
     const socketDiff = imported.desiredSocket - Number(item.socket_quantity || 0);
@@ -873,8 +859,6 @@ async function importStockExcel(file){
       throw new Error(`Excel'de ${errors.length} hatalı satır var:\n• ${sample}${errors.length > 12 ? "\n• ..." : ""}`);
     }
     if(!importRows.length) throw new Error("İşlenecek dolu satır bulunamadı.");
-
-    validateFinalBarcodes(importRows, currentItems);
 
     const updateRows = importRows.filter(entry => entry.id);
     const newRows = importRows.filter(entry => !entry.id);
@@ -1470,48 +1454,119 @@ async function confirmStockOperation(){
   }
 }
 
+function barcodeLocationLabel(item){
+  const box = item.box_no || "-";
+  const shelf = item.shelf_location || "-";
+  return `${t("box")}: ${box} • ${t("shelf")}: ${shelf}`;
+}
+
+function barcodeLocationStockSummary(item){
+  if(item.product_type === "cerceve"){
+    return `${t("withSocket")}: ${Number(item.socket_quantity || 0)} • ${t("withoutSocket")}: ${Number(item.no_socket_quantity || 0)} • ${t("total")}: ${itemTotal(item)}`;
+  }
+  return `${t("stock")}: ${itemTotal(item)}`;
+}
+
+function setBarcodeActionEnabled(enabled){
+  $("btnBarcodeStockIn").disabled = !enabled;
+  $("btnBarcodeStockOut").disabled = !enabled;
+  $("barcodeActionFrameType").disabled = !enabled;
+  $("barcodeActionAmount").disabled = !enabled;
+}
+
+function selectBarcodeLocation(id){
+  const item = findItem(id);
+  if(!item) return;
+
+  $("barcodeActionItemId").value = item.id;
+  $("barcodeActionProductName").textContent = item.product_name || "Ürün";
+  $("barcodeActionMeta").textContent = `Barkod: ${item.barcode || "-"} • ${barcodeLocationLabel(item)}`;
+  $("barcodeActionStock").innerHTML = operationStockHtml(item);
+  $("barcodeActionFrameTypeWrap").classList.toggle("hidden", item.product_type !== "cerceve");
+  $("barcodeActionFrameType").value = "socket_quantity";
+  $("barcodeActionAmount").value = 1;
+  setBarcodeActionEnabled(true);
+  syncAdminStockUi();
+
+  document.querySelectorAll("#barcodeLocationList [data-barcode-location-id]").forEach(button => {
+    button.classList.toggle("active", String(button.dataset.barcodeLocationId) === String(item.id));
+  });
+}
+
+function renderBarcodeLocations(matches){
+  const list = $("barcodeLocationList");
+  if(!list) return;
+  list.innerHTML = matches.map(item => `
+    <button type="button" class="barcodeLocationOption" data-barcode-location-id="${escapeHtml(item.id)}">
+      <span class="barcodeLocationMain">${escapeHtml(barcodeLocationLabel(item))}</span>
+      <span class="barcodeLocationProduct">${escapeHtml(item.product_name || "Ürün")}</span>
+      <span class="barcodeLocationStock">${escapeHtml(barcodeLocationStockSummary(item))}</span>
+    </button>
+  `).join("");
+}
+
 function findBarcodeProduct(rawCode){
   const code = cleanBarcode(rawCode);
   if(!code){
     toast(t("barcodeRequired"));
     return;
   }
-  const matches = allItems.filter(item => cleanBarcode(item.barcode) === code);
+  const matches = allItems
+    .filter(item => cleanBarcode(item.barcode) === code)
+    .sort((a, b) => String(a.box_no || "").localeCompare(String(b.box_no || ""), "tr", {numeric:true}) || String(a.shelf_location || "").localeCompare(String(b.shelf_location || ""), "tr", {numeric:true}));
   if(!matches.length){
     toast(t("barcodeNotFound"));
     return;
   }
-  if(matches.length > 1){
-    toast("Bu barkod birden fazla üründe kayıtlı. Ürün barkodlarını düzeltmek gerekiyor.");
-    return;
-  }
   $("barcodeSearch").value = code;
   switchTab("islem");
-  openBarcodeActionModal(matches[0].id);
+  openBarcodeActionModalForMatches(matches, code);
 }
 
-function openBarcodeActionModal(id){
+function openBarcodeActionModalForMatches(matches, code){
   if(!currentPersonnelName){
     openPersonnelModal(false);
     return;
   }
-  const item = findItem(id);
-  if(!item) return;
+  if(!matches?.length) return;
 
-  $("barcodeActionItemId").value = item.id;
-  $("barcodeActionProductName").textContent = item.product_name || "Ürün";
-  $("barcodeActionMeta").textContent = `Barkod: ${item.barcode || "-"} • ${t("box")}: ${item.box_no || "-"} • ${t("shelf")}: ${item.shelf_location || "-"}`;
-  $("barcodeActionStock").innerHTML = operationStockHtml(item);
-  $("barcodeActionFrameTypeWrap").classList.toggle("hidden", item.product_type !== "cerceve");
-  $("barcodeActionFrameType").value = "socket_quantity";
+  const multiple = matches.length > 1;
+  $("barcodeActionItemId").value = "";
   $("barcodeActionAmount").value = 1;
+  $("barcodeActionFrameType").value = "socket_quantity";
+  $("barcodeLocationWrap").classList.toggle("hidden", !multiple);
+  $("barcodeLocationHint").textContent = multiple ? t("locationSelectHint") : "";
+
+  if(multiple){
+    $("barcodeActionProductName").textContent = `${matches[0].product_name || "Ürün"} • ${t("locationCount", {count:matches.length})}`;
+    $("barcodeActionMeta").textContent = `Barkod: ${code}`;
+    $("barcodeActionStock").innerHTML = "";
+    $("barcodeActionFrameTypeWrap").classList.add("hidden");
+    renderBarcodeLocations(matches);
+    setBarcodeActionEnabled(false);
+  }else{
+    $("barcodeLocationList").innerHTML = "";
+    selectBarcodeLocation(matches[0].id);
+  }
+
   syncAdminStockUi();
   $("barcodeActionModal").classList.remove("hidden");
-  setTimeout(() => (adminUnlocked ? $("barcodeActionAmount") : $("btnBarcodeStockOut")).focus(), 50);
+  if(multiple){
+    setTimeout(() => $("barcodeLocationList").querySelector("button")?.focus(), 50);
+  }else{
+    setTimeout(() => (adminUnlocked ? $("barcodeActionAmount") : $("btnBarcodeStockOut")).focus(), 50);
+  }
+}
+
+function openBarcodeActionModal(id){
+  const item = findItem(id);
+  if(item) openBarcodeActionModalForMatches([item], cleanBarcode(item.barcode));
 }
 
 function closeBarcodeActionModal(){
   $("barcodeActionModal").classList.add("hidden");
+  $("barcodeActionItemId").value = "";
+  $("barcodeLocationList").innerHTML = "";
 }
 
 async function confirmBarcodeStockOperation(direction){
@@ -1522,7 +1577,11 @@ async function confirmBarcodeStockOperation(direction){
   try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
 
   const item = findItem($("barcodeActionItemId").value);
-  if(!item || ![1, -1].includes(direction)) return;
+  if(!item){
+    toast(t("selectLocationFirst"));
+    return;
+  }
+  if(![1, -1].includes(direction)) return;
   const amount = adminUnlocked ? Number($("barcodeActionAmount").value) : 1;
   if(!Number.isInteger(amount) || amount <= 0){
     toast(t("invalidAmount"));
@@ -1540,7 +1599,8 @@ async function confirmBarcodeStockOperation(direction){
   const button = direction > 0 ? $("btnBarcodeStockIn") : $("btnBarcodeStockOut");
   setButtonLoading(button, true, "İşleniyor...");
   try{
-    await applyStockMovement(item, direction, amount, variant, "Barkod ile hızlı stok işlemi");
+    const locationNote = `${barcodeLocationLabel(item)} • Barkod ile hızlı stok işlemi`;
+    await applyStockMovement(item, direction, amount, variant, locationNote);
     closeBarcodeActionModal();
     toast(direction > 0 ? t("savedIn", { amount, name:currentPersonnelName }) : t("savedOut", { amount, name:currentPersonnelName }));
     await loadAll();
@@ -2140,6 +2200,7 @@ function setupEvents(){
   $("btnBarcodeStockIn").addEventListener("click", () => confirmBarcodeStockOperation(1));
   $("btnBarcodeStockOut").addEventListener("click", () => confirmBarcodeStockOperation(-1));
   $("barcodeActionModal").addEventListener("click", event => { if(event.target.id === "barcodeActionModal") closeBarcodeActionModal(); });
+  $("barcodeLocationList").addEventListener("click", event => { const button = event.target.closest("[data-barcode-location-id]"); if(button) selectBarcodeLocation(button.dataset.barcodeLocationId); });
   $("btnBoxSearch").addEventListener("click", () => renderBoxes($("boxSearch").value.trim()));
   $("boxSearch").addEventListener("keydown", event => { if(event.key === "Enter") renderBoxes($("boxSearch").value.trim()); });
   $("btnPayment").addEventListener("click", savePayment);

@@ -140,3 +140,15 @@ textarea{min-height:72px;resize:vertical}
 #barcodeActionStock{margin:14px 0}
 #barcodeActionMeta{overflow-wrap:anywhere}
 @media(max-width:700px){.barcodeDirectionActions{grid-template-columns:1fr 1fr}.barcodeDirectionActions button{min-height:70px;font-size:19px}}
+
+/* v2.7.0 - aynı barkodun birden fazla koli/raf konumunda kullanımı */
+.barcodeLocationWrap{margin:14px 0;padding:12px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.barcodeLocationWrap h3{margin:0 0 4px}
+.barcodeLocationList{display:grid;gap:8px;margin-top:10px}
+.barcodeLocationOption{display:grid;grid-template-columns:1fr auto;gap:3px 10px;text-align:left;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--text)}
+.barcodeLocationOption:hover,.barcodeLocationOption:focus{border-color:var(--accent);outline:none}
+.barcodeLocationOption.active{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 32%,transparent);background:color-mix(in srgb,var(--accent) 10%,var(--card))}
+.barcodeLocationMain{font-weight:800;font-size:15px}
+.barcodeLocationProduct{grid-column:1;color:var(--muted);font-size:13px}
+.barcodeLocationStock{grid-column:2;grid-row:1 / span 2;align-self:center;font-weight:700;font-size:13px;color:var(--label)}
+@media(max-width:560px){.barcodeLocationOption{grid-template-columns:1fr}.barcodeLocationStock{grid-column:1;grid-row:auto}}
