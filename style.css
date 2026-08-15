@@ -121,9 +121,22 @@ textarea{min-height:72px;resize:vertical}
 .languageGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:15px}.languageChoice{border:1px solid var(--line);background:var(--surface);font-size:16px}.languageChoice.active{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface));box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 20%,transparent)}.loginLanguageGrid{margin:16px 0}
 [dir="rtl"] body{text-align:right}[dir="rtl"] .profileButton,[dir="rtl"] .themeChoice{text-align:right}[dir="rtl"] #barcodeSearch,[dir="rtl"] #barcode,[dir="rtl"] #editBarcode{direction:ltr;text-align:left}[dir="rtl"] .powered{text-align:left}
 
+
+.stockListHead{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.excelActions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.excelHelp{margin-top:14px;padding:12px 14px;border:1px dashed color-mix(in srgb,var(--accent) 48%,var(--line));border-radius:14px;background:color-mix(in srgb,var(--accent) 7%,var(--surface));font-size:13px;line-height:1.55;color:var(--label)}.excelHelp #excelStatus{display:block;margin-top:6px}.excelActions button{white-space:nowrap}
+
 @media(max-width:800px){
   .topbar{align-items:flex-start;padding:12px}.topbarRight{align-items:flex-end;flex-direction:column;gap:5px}.profileButton b{max-width:110px}.powered{font-size:10px}.container{padding:12px}.card,.hero{border-radius:16px}
   .grid,.quickstats,.twoCols,.operationFilters,.settingsGrid,.themeGrid{grid-template-columns:1fr}
   .searchbox{flex-direction:column}.stockActions button{flex:1}.itemHead{align-items:flex-start}.barcodeBox,.barcodeActions{grid-template-columns:1fr}.reportHead{align-items:stretch;flex-direction:column}.movementStats{grid-template-columns:repeat(2,1fr)}.permissionGrid{grid-template-columns:1fr}.languageGrid{grid-template-columns:1fr}
-  .registrationControl{align-items:stretch;flex-direction:column}.personnelSecurityActions{grid-template-columns:1fr}.operationThumb{width:64px;height:64px}.operationThumb+.itemHead{min-height:64px}
+  .registrationControl{align-items:stretch;flex-direction:column}.stockListHead{flex-direction:column}.excelActions{width:100%;justify-content:stretch}.excelActions button{flex:1}.personnelSecurityActions{grid-template-columns:1fr}.operationThumb{width:64px;height:64px}.operationThumb+.itemHead{min-height:64px}
 }
+
+
+/* v2.5.0 - Barkodla hızlı giriş / çıkış */
+.barcodeActionCard{width:min(560px,96vw)}
+.barcodeDirectionActions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.barcodeDirectionActions button{min-height:64px;font-size:20px;font-weight:800;border-radius:16px}
+.singleUnitHint{padding:10px 12px;border:1px dashed var(--line);border-radius:12px;background:color-mix(in srgb,var(--surface) 82%,var(--accent) 18%)}
+#barcodeActionStock{margin:14px 0}
+#barcodeActionMeta{overflow-wrap:anywhere}
+@media(max-width:700px){.barcodeDirectionActions{grid-template-columns:1fr 1fr}.barcodeDirectionActions button{min-height:70px;font-size:19px}}

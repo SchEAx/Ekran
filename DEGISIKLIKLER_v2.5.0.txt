@@ -1,0 +1,12 @@
+Ekran & Çerçeve v2.5.0
+
+- Telefon kamerasıyla barkod tarama akışı Giriş / Çıkış seçimine çevrildi.
+- Barkod okunduktan sonra ürün adı, barkod, koli, raf ve mevcut stok bilgisi pencerede gösterilir.
+- Çerçeve ürünlerde Soketli / Soketsiz seçimi barkod işlem penceresinde korunur.
+- Personel modunda adet alanı gösterilmez; her giriş / çıkış 1 adet olarak kaydedilir.
+- Admin modunda adet alanı açılır; toplu giriş / çıkış yapılabilir.
+- Normal stok giriş / çıkış penceresinde de personel için miktar 1'e sabitlendi, Admin için adet alanı açık bırakıldı.
+- Excel yükleme / toplu stok güncelleme yalnızca Admin moduna alındı. Excel indirme yetkili personelde kullanılabilir.
+- Ürün düzenleme ekranındaki stok miktarı alanları personelde kilitli, Admin modunda düzenlenebilir.
+- Uygulama içi toplu stok hareketlerinde personel hesabına ek kontrol eklendi.
+- PWA önbellek sürümü v2.5.0 olarak yenilendi.

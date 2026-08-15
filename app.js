@@ -1,4 +1,4 @@
-const APP_VERSION = "2.3.1";
+const APP_VERSION = "2.5.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -25,11 +25,11 @@ const TAB_LABELS = {
 
 const I18N = {
   tr:{
-    appTitle:"📦 Koli Depo", appSubtitle:"Çerçeve & Multimedya stok sistemi",
+    appTitle:"🖥️ Ekran & Çerçeve", appSubtitle:"Ekran & Çerçeve stok sistemi",
     adminLogin:"Admin Girişi", adminLogout:"Admin Çıkışı", personnel:"Personel", admin:"Admin",
     tabProduct:"Ürün Ekle", tabOperation:"Stok Giriş / Çıkış", tabStockList:"Stok Listesi", tabBoxes:"Koli Yönetimi", tabPayments:"Ödemeler", tabPersonnel:"Personeller", tabMovements:"Hareketler", tabSettings:"Ayarlar",
-    operationTitle:"Stok Giriş / Çıkış", operationHint:"Ürünü bul, giriş veya çıkış seç ve adedi gir. Çerçevelerde soketli/soketsiz stok ayrı güncellenir.",
-    quickBarcode:"⚡ Barkodla Hızlı Çıkış", quickBarcodeHint:"Barkodu okutunca ürün doğrudan çıkış ekranında açılır.", barcodePlaceholder:"Barkodu okut veya numarayı yaz", findProduct:"Ürünü Bul", scanCamera:"📷 Kamera ile Tara",
+    operationTitle:"Stok Giriş / Çıkış", operationHint:"Ürünü bul veya barkodu kamerayla okut. Personel işlemleri 1 adet olarak kaydedilir; Admin modunda toplu adet seçilebilir.",
+    quickBarcode:"⚡ Barkodla Hızlı İşlem", quickBarcodeHint:"Telefon kamerasıyla okut; ürün penceresinden Giriş veya Çıkış seç. Personelde her işlem 1 adet, adminde adet seçilebilir.", barcodePlaceholder:"Barkodu okut veya numarayı yaz", findProduct:"Ürünü Bul", scanCamera:"📷 Kamera ile Tara",
     searchProduct:"Ürün Ara", searchPlaceholder:"Ürün, araç, koli no veya raf ara...", productType:"Ürün Tipi", all:"Tümü", frame:"Çerçeve", multimedia:"Multimedya",
     personnelProfile:"Personel Profili", registeredPersonnel:"Bu cihazda kayıtlı personel:", changePersonnel:"Personeli Değiştir",
     languageTitle:"Dil / اللغة", languageHint:"Uygulama dilini seç. Seçim bu cihazda kayıtlı kalır.", themeColors:"Tema Renkleri", themeHint:"Seçtiğin tema bu cihazda kayıtlı kalır.", update:"Güncelle",
@@ -46,11 +46,11 @@ const I18N = {
     themeSaved:"Tema kaydedildi.", languageSaved:"Dil kaydedildi."
   },
   ar:{
-    appTitle:"📦 مستودع الصناديق", appSubtitle:"نظام مخزون الإطارات وشاشات الوسائط",
+    appTitle:"🖥️ Ekran & Çerçeve", appSubtitle:"نظام مخزون الشاشات والإطارات",
     adminLogin:"دخول المدير", adminLogout:"خروج المدير", personnel:"موظف", admin:"مدير",
     tabProduct:"إضافة منتج", tabOperation:"إدخال / إخراج المخزون", tabStockList:"قائمة المخزون", tabBoxes:"إدارة الصناديق", tabPayments:"المدفوعات", tabPersonnel:"الموظفون", tabMovements:"الحركات", tabSettings:"الإعدادات",
-    operationTitle:"إدخال / إخراج المخزون", operationHint:"ابحث عن المنتج، اختر إدخالاً أو إخراجاً، ثم أدخل الكمية. مخزون الإطار مع المقبس وبدونه يُحدّث بشكل منفصل.",
-    quickBarcode:"⚡ إخراج سريع بالباركود", quickBarcodeHint:"عند مسح الباركود تفتح شاشة إخراج المنتج مباشرة.", barcodePlaceholder:"امسح الباركود أو اكتب الرقم", findProduct:"البحث عن المنتج", scanCamera:"📷 المسح بالكاميرا",
+    operationTitle:"إدخال / إخراج المخزون", operationHint:"ابحث عن المنتج أو امسح الباركود بالكاميرا. الموظف يسجل قطعة واحدة في كل عملية، والمدير يمكنه تحديد كمية متعددة.",
+    quickBarcode:"⚡ عملية سريعة بالباركود", quickBarcodeHint:"امسح بالكاميرا ثم اختر إدخال أو إخراج. الموظف يسجل قطعة واحدة في كل عملية، والمدير يمكنه تحديد الكمية.", barcodePlaceholder:"امسح الباركود أو اكتب الرقم", findProduct:"البحث عن المنتج", scanCamera:"📷 المسح بالكاميرا",
     searchProduct:"البحث عن منتج", searchPlaceholder:"ابحث بالمنتج أو السيارة أو الصندوق أو الرف...", productType:"نوع المنتج", all:"الكل", frame:"إطار", multimedia:"شاشة وسائط",
     personnelProfile:"ملف الموظف", registeredPersonnel:"الموظف المسجل على هذا الجهاز:", changePersonnel:"تغيير الموظف",
     languageTitle:"اللغة / Dil", languageHint:"اختر لغة التطبيق. سيبقى الاختيار محفوظاً على هذا الجهاز.", themeColors:"ألوان الواجهة", themeHint:"اللون الذي تختاره سيبقى محفوظاً على هذا الجهاز.", update:"تحديث",
@@ -162,6 +162,19 @@ function updateProfileUi(){
   $("btnAdminEntry").classList.toggle("adminActive", adminUnlocked);
   $("btnAdminEntry").querySelector("b").textContent = adminUnlocked ? t("adminLogout") : t("adminLogin");
   applyTabPermissions();
+  syncAdminStockUi();
+}
+
+function syncAdminStockUi(){
+  $("operationAmountWrap")?.classList.toggle("hidden", !adminUnlocked);
+  $("operationSingleUnitHint")?.classList.toggle("hidden", adminUnlocked);
+  $("barcodeAdminAmountWrap")?.classList.toggle("hidden", !adminUnlocked);
+  $("barcodePersonnelAmountHint")?.classList.toggle("hidden", adminUnlocked);
+  if($("btnImportStockExcel")) $("btnImportStockExcel").classList.toggle("hidden", !adminUnlocked);
+
+  const stockInputs = [$("editSocketQuantity"), $("editNoSocketQuantity"), $("editQuantity")].filter(Boolean);
+  stockInputs.forEach(input => { input.disabled = !adminUnlocked; });
+  $("editStockAdminNote")?.classList.toggle("hidden", adminUnlocked);
 }
 
 function canUseTab(tabName){
@@ -423,19 +436,38 @@ function operationItemHtml(item){
     </div>`;
 }
 
+async function fetchAllItems(){
+  if(!supabaseClient) return [];
+  const pageSize = 1000;
+  const rows = [];
+  let from = 0;
+
+  while(true){
+    const { data, error } = await supabaseClient
+      .from("depo_items")
+      .select("*")
+      .order("created_at", { ascending:false })
+      .range(from, from + pageSize - 1);
+
+    if(error) throw new Error(error.message);
+    const page = data || [];
+    rows.push(...page);
+    if(page.length < pageSize) break;
+    from += pageSize;
+  }
+
+  return rows;
+}
+
 async function loadAll(){
   if(!supabaseClient) return;
-  const { data, error } = await supabaseClient
-    .from("depo_items")
-    .select("*")
-    .order("created_at", { ascending:false });
-
-  if(error){
+  try{
+    allItems = await fetchAllItems();
+  }catch(error){
     toast("Stok çekilemedi: " + error.message);
     return;
   }
 
-  allItems = data || [];
   renderList(allItems);
   renderOperationList();
   renderStats();
@@ -452,6 +484,448 @@ function renderStats(){
 function renderList(list){
   $("stockList").innerHTML = list.length ? list.map(itemHtml).join("") : `<p class="muted">${t("noRecord")}</p>`;
 }
+
+const STOCK_EXCEL_COLUMNS = [
+  ["ID (DOKUNMA)", "id"],
+  ["Barkod", "barcode"],
+  ["Ürün Tipi", "product_type"],
+  ["Ürün Adı", "product_name"],
+  ["Koli No", "box_no"],
+  ["Raf Konumu", "shelf_location"],
+  ["Toplam Stok", "total_stock"],
+  ["Soketli Stok", "socket_quantity"],
+  ["Soketsiz Stok", "no_socket_quantity"],
+  ["Araç Markası", "vehicle_brand"],
+  ["Araç Modeli", "vehicle_model"],
+  ["Model Yılı", "vehicle_year"],
+  ["Soket Durumu", "socket_included"],
+  ["Multimedya Markası", "media_brand"],
+  ["RAM", "ram"],
+  ["Hafıza", "storage"],
+  ["Ekran İnç", "screen_inch"],
+  ["Not", "note"],
+  ["Resim URL", "image_url"]
+];
+
+function excelCellText(value){
+  if(value === null || value === undefined) return "";
+  return String(value);
+}
+
+function productTypeExcelLabel(type){
+  return type === "cerceve" ? "Çerçeve" : "Multimedya";
+}
+
+function normalizeExcelHeader(value){
+  return normalize(String(value || "").trim())
+    .replace(/[()]/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function normalizeExcelProductType(value){
+  const text = normalize(String(value || "").trim());
+  if(["çerçeve", "cerceve", "frame"].includes(text)) return "cerceve";
+  if(["multimedya", "multimedia", "ekran", "media"].includes(text)) return "multimedya";
+  return "";
+}
+
+function normalizeExcelSocketIncluded(value){
+  const text = normalize(String(value || "").trim());
+  if(!text) return null;
+  if(["var", "evet", "yes", "1"].includes(text)) return "var";
+  if(["yok", "hayır", "hayir", "no", "0"].includes(text)) return "yok";
+  return String(value).trim();
+}
+
+function excelNonNegativeInteger(value, fieldName, rowNumber){
+  if(value === "" || value === null || value === undefined) return 0;
+  const number = Number(value);
+  if(!Number.isInteger(number) || number < 0){
+    throw new Error(`${rowNumber}. satırdaki "${fieldName}" 0 veya daha büyük tam sayı olmalı.`);
+  }
+  return number;
+}
+
+function setExcelStatus(message){
+  if($("excelStatus")) $("excelStatus").textContent = message || "";
+}
+
+async function exportStockExcel(){
+  if(!canUseTab("liste")){
+    toast("Stok Listesi sekmesi için yetkin bulunmuyor.");
+    return;
+  }
+  if(!window.XLSX){
+    toast("Excel modülü yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenile.");
+    return;
+  }
+  if(!supabaseClient){
+    toast("Supabase bağlantısı hazır değil.");
+    return;
+  }
+
+  const button = $("btnExportStockExcel");
+  setButtonLoading(button, true, "Hazırlanıyor...");
+  setExcelStatus("Tüm stoklar hazırlanıyor...");
+  try{
+    const items = await fetchAllItems();
+    const rows = items.map(item => ({
+      "ID (DOKUNMA)": excelCellText(item.id),
+      "Barkod": excelCellText(item.barcode),
+      "Ürün Tipi": productTypeExcelLabel(item.product_type),
+      "Ürün Adı": excelCellText(item.product_name),
+      "Koli No": excelCellText(item.box_no),
+      "Raf Konumu": excelCellText(item.shelf_location),
+      "Toplam Stok": itemTotal(item),
+      "Soketli Stok": item.product_type === "cerceve" ? Number(item.socket_quantity || 0) : "",
+      "Soketsiz Stok": item.product_type === "cerceve" ? Number(item.no_socket_quantity || 0) : "",
+      "Araç Markası": excelCellText(item.vehicle_brand),
+      "Araç Modeli": excelCellText(item.vehicle_model),
+      "Model Yılı": excelCellText(item.vehicle_year),
+      "Soket Durumu": excelCellText(item.socket_included),
+      "Multimedya Markası": excelCellText(item.media_brand),
+      "RAM": excelCellText(item.ram),
+      "Hafıza": excelCellText(item.storage),
+      "Ekran İnç": excelCellText(item.screen_inch),
+      "Not": excelCellText(item.note),
+      "Resim URL": excelCellText(item.image_url)
+    }));
+
+    const sheet = XLSX.utils.json_to_sheet(rows, { header:STOCK_EXCEL_COLUMNS.map(([header]) => header) });
+    sheet["!cols"] = [
+      {wch:38},{wch:20},{wch:14},{wch:34},{wch:14},{wch:18},{wch:13},{wch:13},{wch:15},
+      {wch:18},{wch:22},{wch:15},{wch:15},{wch:22},{wch:12},{wch:14},{wch:12},{wch:35},{wch:45}
+    ];
+
+    // ID ve Barkod sütunlarını metin tut. Özellikle başında 0 olan barkodların Excel'de bozulmasını önler.
+    const range = XLSX.utils.decode_range(sheet["!ref"] || "A1:A1");
+    for(let r = 1; r <= range.e.r; r++){
+      for(const c of [0, 1]){
+        const address = XLSX.utils.encode_cell({r, c});
+        if(sheet[address]){
+          sheet[address].t = "s";
+          sheet[address].v = String(sheet[address].v ?? "");
+          sheet[address].z = "@";
+        }
+      }
+    }
+
+    const infoRows = [
+      ["Ekran & Çerçeve - Excel Kullanımı"],
+      ["1", "ID (DOKUNMA) sütununu değiştirme veya silme. Mevcut kaydı bulmak için kullanılır."],
+      ["2", "Toplu barkod vermek için yalnızca Barkod sütununu doldurman yeterli."],
+      ["3", "Aynı barkod iki farklı üründe kullanılamaz; yüklemede kontrol edilir."],
+      ["4", "Mevcut stok miktarlarını Excel'de değiştirirsen farklar stok hareketi olarak kaydedilir."],
+      ["5", "Yeni ürün eklemek istersen ID'yi boş bırak; Ürün Tipi, Ürün Adı ve Koli No alanlarını doldur."]
+    ];
+    const infoSheet = XLSX.utils.aoa_to_sheet(infoRows);
+    infoSheet["!cols"] = [{wch:10},{wch:100}];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Stoklar");
+    XLSX.utils.book_append_sheet(workbook, infoSheet, "Kullanım");
+    const today = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(workbook, `Ekran-Cerceve-Stok-${today}.xlsx`);
+    setExcelStatus(`${items.length.toLocaleString("tr-TR")} kayıt Excel'e aktarıldı.`);
+    toast("Stok Excel dosyası indirildi. Barkod sütununu topluca düzenleyebilirsin.");
+  }catch(error){
+    setExcelStatus("");
+    toast("Excel indirilemedi: " + error.message);
+  }finally{
+    setButtonLoading(button, false);
+  }
+}
+
+function excelHeaderIndexMap(headerRow){
+  const map = new Map();
+  headerRow.forEach((header, index) => map.set(normalizeExcelHeader(header), index));
+  return map;
+}
+
+function excelColumnIndex(headerMap, headerName){
+  return headerMap.get(normalizeExcelHeader(headerName));
+}
+
+function excelHasColumn(headerMap, headerName){
+  return excelColumnIndex(headerMap, headerName) !== undefined;
+}
+
+function excelValue(row, headerMap, headerName){
+  const index = excelColumnIndex(headerMap, headerName);
+  return index === undefined ? undefined : row[index];
+}
+
+function buildImportedItem(row, rowNumber, headerMap, existingItem){
+  const isExisting = Boolean(existingItem);
+  const typeCell = excelValue(row, headerMap, "Ürün Tipi");
+  const importedType = typeCell === undefined ? (existingItem?.product_type || "") : normalizeExcelProductType(typeCell);
+  const productType = importedType || existingItem?.product_type || "";
+
+  if(!productType) throw new Error(`${rowNumber}. satırda Ürün Tipi geçersiz. "Çerçeve" veya "Multimedya" yaz.`);
+  if(isExisting && productType !== existingItem.product_type){
+    throw new Error(`${rowNumber}. satırda mevcut ürünün Ürün Tipi Excel'den değiştirilemez.`);
+  }
+
+  const base = existingItem ? {...existingItem} : {
+    product_type:productType,
+    product_name:"",
+    barcode:null,
+    box_no:"",
+    shelf_location:"",
+    quantity:0,
+    socket_quantity:0,
+    no_socket_quantity:0,
+    vehicle_brand:null,
+    vehicle_model:null,
+    vehicle_year:null,
+    socket_included:null,
+    media_brand:null,
+    ram:null,
+    storage:null,
+    screen_inch:null,
+    image_url:null,
+    note:""
+  };
+
+  base.product_type = productType;
+  const setText = (header, field, transform = value => String(value ?? "").trim()) => {
+    if(excelHasColumn(headerMap, header)){
+      const value = excelValue(row, headerMap, header);
+      base[field] = transform(value);
+    }
+  };
+
+  setText("Ürün Adı", "product_name");
+  setText("Barkod", "barcode", value => cleanBarcode(value) || null);
+  setText("Koli No", "box_no", value => String(value ?? "").trim().toLocaleUpperCase("tr-TR"));
+  setText("Raf Konumu", "shelf_location");
+  setText("Araç Markası", "vehicle_brand", value => String(value ?? "").trim() || null);
+  setText("Araç Modeli", "vehicle_model", value => String(value ?? "").trim() || null);
+  setText("Model Yılı", "vehicle_year", value => String(value ?? "").trim() || null);
+  setText("Soket Durumu", "socket_included", normalizeExcelSocketIncluded);
+  setText("Multimedya Markası", "media_brand", value => String(value ?? "").trim() || null);
+  setText("RAM", "ram", value => String(value ?? "").trim() || null);
+  setText("Hafıza", "storage", value => String(value ?? "").trim() || null);
+  setText("Ekran İnç", "screen_inch", value => String(value ?? "").trim() || null);
+  setText("Not", "note");
+  setText("Resim URL", "image_url", value => String(value ?? "").trim() || null);
+
+  if(!base.product_name) throw new Error(`${rowNumber}. satırda Ürün Adı boş olamaz.`);
+  if(!base.box_no) throw new Error(`${rowNumber}. satırda Koli No boş olamaz.`);
+
+  let desiredSocket = Number(existingItem?.socket_quantity || 0);
+  let desiredNoSocket = Number(existingItem?.no_socket_quantity || 0);
+  let desiredQuantity = Number(existingItem?.quantity || 0);
+
+  if(productType === "cerceve"){
+    if(excelHasColumn(headerMap, "Soketli Stok")) desiredSocket = excelNonNegativeInteger(excelValue(row, headerMap, "Soketli Stok"), "Soketli Stok", rowNumber);
+    if(excelHasColumn(headerMap, "Soketsiz Stok")) desiredNoSocket = excelNonNegativeInteger(excelValue(row, headerMap, "Soketsiz Stok"), "Soketsiz Stok", rowNumber);
+    desiredQuantity = 0;
+  }else{
+    if(excelHasColumn(headerMap, "Toplam Stok")) desiredQuantity = excelNonNegativeInteger(excelValue(row, headerMap, "Toplam Stok"), "Toplam Stok", rowNumber);
+    desiredSocket = 0;
+    desiredNoSocket = 0;
+  }
+
+  const metadata = {
+    product_type:base.product_type,
+    product_name:base.product_name,
+    barcode:base.barcode || null,
+    box_no:base.box_no,
+    shelf_location:base.shelf_location || "",
+    vehicle_brand:base.product_type === "cerceve" ? (base.vehicle_brand || null) : null,
+    vehicle_model:base.product_type === "cerceve" ? (base.vehicle_model || null) : null,
+    vehicle_year:base.product_type === "cerceve" ? (base.vehicle_year || null) : null,
+    socket_included:base.product_type === "cerceve" ? (base.socket_included || null) : null,
+    media_brand:base.product_type === "multimedya" ? (base.media_brand || null) : null,
+    ram:base.product_type === "multimedya" ? (base.ram || null) : null,
+    storage:base.product_type === "multimedya" ? (base.storage || null) : null,
+    screen_inch:base.screen_inch || null,
+    image_url:base.image_url || null,
+    note:base.note || ""
+  };
+
+  return { metadata, desiredSocket, desiredNoSocket, desiredQuantity };
+}
+
+function validateFinalBarcodes(importRows, currentItems){
+  const finalByKey = new Map(currentItems.map(item => [String(item.id), cleanBarcode(item.barcode)]));
+  importRows.forEach((entry, index) => {
+    const key = entry.id ? String(entry.id) : `__new_${index}`;
+    finalByKey.set(key, cleanBarcode(entry.metadata.barcode));
+  });
+
+  const owners = new Map();
+  for(const [key, barcode] of finalByKey.entries()){
+    if(!barcode) continue;
+    if(owners.has(barcode) && owners.get(barcode) !== key){
+      throw new Error(`Aynı barkod iki üründe kullanılmış: ${barcode}`);
+    }
+    owners.set(barcode, key);
+  }
+}
+
+async function applyImportedStockDifference(item, imported){
+  if(item.product_type === "cerceve"){
+    const socketDiff = imported.desiredSocket - Number(item.socket_quantity || 0);
+    const noSocketDiff = imported.desiredNoSocket - Number(item.no_socket_quantity || 0);
+    if(socketDiff) await applyStockMovement(item, Math.sign(socketDiff), Math.abs(socketDiff), "socket_quantity", "Excel toplu stok güncellemesi");
+    if(noSocketDiff) await applyStockMovement(item, Math.sign(noSocketDiff), Math.abs(noSocketDiff), "no_socket_quantity", "Excel toplu stok güncellemesi");
+    return Number(Boolean(socketDiff)) + Number(Boolean(noSocketDiff));
+  }
+
+  const quantityDiff = imported.desiredQuantity - Number(item.quantity || 0);
+  if(quantityDiff) await applyStockMovement(item, Math.sign(quantityDiff), Math.abs(quantityDiff), "quantity", "Excel toplu stok güncellemesi");
+  return Number(Boolean(quantityDiff));
+}
+
+async function importStockExcel(file){
+  if(!file) return;
+  if(!adminUnlocked){
+    toast("Excel yükleme ve toplu stok güncelleme yalnızca Admin modunda kullanılabilir.");
+    $("stockExcelFile").value = "";
+    return;
+  }
+  if(!canUseTab("urun")){
+    toast("Excel yüklemek için Ürün Ekle / Düzenle yetkisi gerekiyor.");
+    return;
+  }
+  if(!window.XLSX){
+    toast("Excel modülü yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenile.");
+    return;
+  }
+  if(!supabaseClient){
+    toast("Supabase bağlantısı hazır değil.");
+    return;
+  }
+  try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
+
+  const button = $("btnImportStockExcel");
+  setButtonLoading(button, true, "Yükleniyor...");
+  setExcelStatus("Excel okunuyor...");
+
+  try{
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, {type:"array", cellDates:false});
+    const sheet = workbook.Sheets["Stoklar"] || workbook.Sheets[workbook.SheetNames[0]];
+    if(!sheet) throw new Error("Excel içinde okunabilir sayfa bulunamadı.");
+
+    const matrix = XLSX.utils.sheet_to_json(sheet, {header:1, raw:false, defval:""});
+    if(matrix.length < 2) throw new Error("Excel dosyasında güncellenecek kayıt yok.");
+    const headerMap = excelHeaderIndexMap(matrix[0]);
+    if(!excelHasColumn(headerMap, "ID (DOKUNMA)")) throw new Error('"ID (DOKUNMA)" sütunu bulunamadı. Programdan indirdiğin Excel dosyasını kullan.');
+
+    setExcelStatus("Mevcut stoklar karşılaştırılıyor...");
+    const currentItems = await fetchAllItems();
+    const currentById = new Map(currentItems.map(item => [String(item.id), item]));
+    const importRows = [];
+    const errors = [];
+
+    for(let index = 1; index < matrix.length; index++){
+      const row = matrix[index];
+      if(row.every(value => String(value ?? "").trim() === "")) continue;
+      const rowNumber = index + 1;
+      try{
+        const id = String(excelValue(row, headerMap, "ID (DOKUNMA)") || "").trim();
+        const existingItem = id ? currentById.get(id) : null;
+        if(id && !existingItem) throw new Error(`${rowNumber}. satırdaki ID sistemde bulunamadı: ${id}`);
+        const built = buildImportedItem(row, rowNumber, headerMap, existingItem);
+        importRows.push({ rowNumber, id:id || null, existingItem, ...built });
+      }catch(error){
+        errors.push(error.message);
+      }
+    }
+
+    if(errors.length){
+      const sample = errors.slice(0, 12).join("\n• ");
+      throw new Error(`Excel'de ${errors.length} hatalı satır var:\n• ${sample}${errors.length > 12 ? "\n• ..." : ""}`);
+    }
+    if(!importRows.length) throw new Error("İşlenecek dolu satır bulunamadı.");
+
+    validateFinalBarcodes(importRows, currentItems);
+
+    const updateRows = importRows.filter(entry => entry.id);
+    const newRows = importRows.filter(entry => !entry.id);
+    const stockChangeCount = updateRows.reduce((count, entry) => {
+      const item = entry.existingItem;
+      if(item.product_type === "cerceve"){
+        return count + Number(entry.desiredSocket !== Number(item.socket_quantity || 0)) + Number(entry.desiredNoSocket !== Number(item.no_socket_quantity || 0));
+      }
+      return count + Number(entry.desiredQuantity !== Number(item.quantity || 0));
+    }, 0);
+
+    const confirmed = confirm(
+      `${importRows.length.toLocaleString("tr-TR")} satır işlenecek.\n` +
+      `• Güncellenecek: ${updateRows.length.toLocaleString("tr-TR")}\n` +
+      `• Yeni ürün: ${newRows.length.toLocaleString("tr-TR")}\n` +
+      `• Stok farkı işlemi: ${stockChangeCount.toLocaleString("tr-TR")}\n\n` +
+      `Devam edilsin mi?`
+    );
+    if(!confirmed){
+      setExcelStatus("Yükleme iptal edildi.");
+      return;
+    }
+
+    let processed = 0;
+    let stockMovements = 0;
+    const batchSize = 250;
+
+    // Mevcut ürünlerde barkod ve diğer ürün bilgilerini hızlı şekilde toplu güncelle.
+    for(let start = 0; start < updateRows.length; start += batchSize){
+      const batchEntries = updateRows.slice(start, start + batchSize);
+      const payload = batchEntries.map(entry => ({
+        id:entry.id,
+        ...entry.metadata,
+        quantity:Number(entry.existingItem.quantity || 0),
+        socket_quantity:Number(entry.existingItem.socket_quantity || 0),
+        no_socket_quantity:Number(entry.existingItem.no_socket_quantity || 0)
+      }));
+      const { error } = await supabaseClient.from("depo_items").upsert(payload, {onConflict:"id"});
+      if(error) throw new Error("Toplu ürün güncellemesi başarısız: " + error.message);
+      processed += batchEntries.length;
+      setExcelStatus(`${processed.toLocaleString("tr-TR")} / ${importRows.length.toLocaleString("tr-TR")} satır işlendi...`);
+    }
+
+    // Stok miktarı değiştirilen mevcut ürünlerde farkı hareket kaydıyla uygula.
+    for(const entry of updateRows){
+      stockMovements += await applyImportedStockDifference(entry.existingItem, entry);
+    }
+
+    // ID'si boş satırlar yeni ürün olarak eklenir. İlk stokları hareket kaydıyla oluşturulur.
+    for(const entry of newRows){
+      const insertRow = {
+        ...entry.metadata,
+        quantity:0,
+        socket_quantity:0,
+        no_socket_quantity:0
+      };
+      const { data:createdItem, error } = await supabaseClient.from("depo_items").insert(insertRow).select("*").single();
+      if(error) throw new Error(`${entry.rowNumber}. satır yeni ürün olarak eklenemedi: ${error.message}`);
+      if(createdItem.product_type === "cerceve"){
+        if(entry.desiredSocket > 0){ await applyStockMovement(createdItem, 1, entry.desiredSocket, "socket_quantity", "Excel ile yeni ürün ilk stok kaydı"); stockMovements++; }
+        if(entry.desiredNoSocket > 0){ await applyStockMovement(createdItem, 1, entry.desiredNoSocket, "no_socket_quantity", "Excel ile yeni ürün ilk stok kaydı"); stockMovements++; }
+      }else if(entry.desiredQuantity > 0){
+        await applyStockMovement(createdItem, 1, entry.desiredQuantity, "quantity", "Excel ile yeni ürün ilk stok kaydı");
+        stockMovements++;
+      }
+      processed++;
+      setExcelStatus(`${processed.toLocaleString("tr-TR")} / ${importRows.length.toLocaleString("tr-TR")} satır işlendi...`);
+    }
+
+    await loadAll();
+    setExcelStatus(`Tamamlandı: ${updateRows.length.toLocaleString("tr-TR")} güncelleme, ${newRows.length.toLocaleString("tr-TR")} yeni ürün, ${stockMovements.toLocaleString("tr-TR")} stok hareketi.`);
+    toast(`Excel yüklendi. ${updateRows.length} kayıt güncellendi, ${newRows.length} yeni ürün eklendi.`);
+  }catch(error){
+    console.error(error);
+    setExcelStatus("Yükleme başarısız.");
+    alert(error.message);
+    toast("Excel yüklenemedi. Hata ayrıntısını ekranda gösterdim.");
+  }finally{
+    $("stockExcelFile").value = "";
+    setButtonLoading(button, false);
+  }
+}
+
 
 function renderOperationList(){
   const query = normalize($("operationSearch").value.trim());
@@ -625,6 +1099,10 @@ async function saveItem(){
     toast("Stok adetleri 0 veya daha büyük tam sayı olmalı.");
     return;
   }
+  if(!adminUnlocked && [initialSocketQuantity, initialNoSocketQuantity, initialQuantity].some(value => value > 1)){
+    toast("Personel hesabında toplu stok girişi kapalı. Tek işlemde en fazla 1 adet girebilirsin; toplu işlem için Admin girişi yap.");
+    return;
+  }
   const row = {
     product_type:type,
     product_name:$("productName").value.trim(),
@@ -758,6 +1236,7 @@ function openEditModal(id){
   $("editSocketQuantity").value = Number(item.socket_quantity || 0);
   $("editNoSocketQuantity").value = Number(item.no_socket_quantity || 0);
   $("editQuantity").value = Number(item.quantity || 0);
+  syncAdminStockUi();
 
   if(item.image_url){
     $("editImagePreview").src = item.image_url;
@@ -773,6 +1252,10 @@ function closeEditModal(){
 
 async function applyStockMovement(item, direction, amount, variant, note = ""){
   if(!currentPersonnelName || !currentPersonnelPin) throw new Error("Önce personel adı ve PIN ile giriş yap.");
+  if(!Number.isInteger(Number(amount)) || Number(amount) <= 0) throw new Error("Stok adedi 1 veya daha büyük tam sayı olmalı.");
+  if(!adminUnlocked && Number(amount) !== 1){
+    throw new Error("Personel hesabında toplu stok işlemi kapalıdır. Her giriş/çıkış 1 adet olarak kaydedilir; toplu işlem için Admin girişi yap.");
+  }
   const { data, error } = await supabaseClient.rpc("apply_depo_stock_movement", {
     p_item_id:String(item.id),
     p_direction:direction,
@@ -808,25 +1291,27 @@ async function saveEdit(){
   }
 
   const stockChanges = [];
-  if(item.product_type === "cerceve"){
-    const socketQuantity = Number($("editSocketQuantity").value || 0);
-    const noSocketQuantity = Number($("editNoSocketQuantity").value || 0);
-    if(socketQuantity < 0 || noSocketQuantity < 0){
-      toast("Stok miktarı eksi olamaz.");
-      return;
+  if(adminUnlocked){
+    if(item.product_type === "cerceve"){
+      const socketQuantity = Number($("editSocketQuantity").value || 0);
+      const noSocketQuantity = Number($("editNoSocketQuantity").value || 0);
+      if(socketQuantity < 0 || noSocketQuantity < 0){
+        toast("Stok miktarı eksi olamaz.");
+        return;
+      }
+      const socketDiff = socketQuantity - Number(item.socket_quantity || 0);
+      const noSocketDiff = noSocketQuantity - Number(item.no_socket_quantity || 0);
+      if(socketDiff) stockChanges.push({ direction:Math.sign(socketDiff), amount:Math.abs(socketDiff), variant:"socket_quantity" });
+      if(noSocketDiff) stockChanges.push({ direction:Math.sign(noSocketDiff), amount:Math.abs(noSocketDiff), variant:"no_socket_quantity" });
+    }else{
+      const quantity = Number($("editQuantity").value || 0);
+      if(quantity < 0){
+        toast("Stok miktarı eksi olamaz.");
+        return;
+      }
+      const quantityDiff = quantity - Number(item.quantity || 0);
+      if(quantityDiff) stockChanges.push({ direction:Math.sign(quantityDiff), amount:Math.abs(quantityDiff), variant:"quantity" });
     }
-    const socketDiff = socketQuantity - Number(item.socket_quantity || 0);
-    const noSocketDiff = noSocketQuantity - Number(item.no_socket_quantity || 0);
-    if(socketDiff) stockChanges.push({ direction:Math.sign(socketDiff), amount:Math.abs(socketDiff), variant:"socket_quantity" });
-    if(noSocketDiff) stockChanges.push({ direction:Math.sign(noSocketDiff), amount:Math.abs(noSocketDiff), variant:"no_socket_quantity" });
-  }else{
-    const quantity = Number($("editQuantity").value || 0);
-    if(quantity < 0){
-      toast("Stok miktarı eksi olamaz.");
-      return;
-    }
-    const quantityDiff = quantity - Number(item.quantity || 0);
-    if(quantityDiff) stockChanges.push({ direction:Math.sign(quantityDiff), amount:Math.abs(quantityDiff), variant:"quantity" });
   }
 
   const saveButton = $("btnSaveEdit");
@@ -893,12 +1378,13 @@ function openOperationModal(id, direction){
   $("operationFrameType").value = "socket_quantity";
   $("operationAmount").value = 1;
   $("operationNote").value = "";
+  syncAdminStockUi();
 
   const confirmButton = $("btnConfirmOperation");
   confirmButton.textContent = isStockIn ? t("saveStockIn") : t("saveStockOut");
   confirmButton.className = isStockIn ? "stockIn" : "stockOut";
   $("operationModal").classList.remove("hidden");
-  setTimeout(() => $("operationAmount").focus(), 50);
+  setTimeout(() => (adminUnlocked ? $("operationAmount") : confirmButton).focus(), 50);
 }
 
 function closeOperationModal(){
@@ -913,7 +1399,7 @@ async function confirmStockOperation(){
 
   const item = findItem($("operationItemId").value);
   const direction = Number($("operationDirection").value);
-  const amount = Number($("operationAmount").value);
+  const amount = adminUnlocked ? Number($("operationAmount").value) : 1;
   if(!item || ![1, -1].includes(direction)) return;
   if(!Number.isInteger(amount) || amount <= 0){
     toast(t("invalidAmount"));
@@ -969,7 +1455,68 @@ function findBarcodeProduct(rawCode){
   }
   $("barcodeSearch").value = code;
   switchTab("islem");
-  openOperationModal(matches[0].id, -1);
+  openBarcodeActionModal(matches[0].id);
+}
+
+function openBarcodeActionModal(id){
+  if(!currentPersonnelName){
+    openPersonnelModal(false);
+    return;
+  }
+  const item = findItem(id);
+  if(!item) return;
+
+  $("barcodeActionItemId").value = item.id;
+  $("barcodeActionProductName").textContent = item.product_name || "Ürün";
+  $("barcodeActionMeta").textContent = `Barkod: ${item.barcode || "-"} • ${t("box")}: ${item.box_no || "-"} • ${t("shelf")}: ${item.shelf_location || "-"}`;
+  $("barcodeActionStock").innerHTML = operationStockHtml(item);
+  $("barcodeActionFrameTypeWrap").classList.toggle("hidden", item.product_type !== "cerceve");
+  $("barcodeActionFrameType").value = "socket_quantity";
+  $("barcodeActionAmount").value = 1;
+  syncAdminStockUi();
+  $("barcodeActionModal").classList.remove("hidden");
+  setTimeout(() => (adminUnlocked ? $("barcodeActionAmount") : $("btnBarcodeStockOut")).focus(), 50);
+}
+
+function closeBarcodeActionModal(){
+  $("barcodeActionModal").classList.add("hidden");
+}
+
+async function confirmBarcodeStockOperation(direction){
+  if(!supabaseClient){
+    toast("Supabase bağlantısı bulunamadı.");
+    return;
+  }
+  try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
+
+  const item = findItem($("barcodeActionItemId").value);
+  if(!item || ![1, -1].includes(direction)) return;
+  const amount = adminUnlocked ? Number($("barcodeActionAmount").value) : 1;
+  if(!Number.isInteger(amount) || amount <= 0){
+    toast(t("invalidAmount"));
+    return;
+  }
+
+  let variant = "quantity";
+  if(item.product_type === "cerceve") variant = $("barcodeActionFrameType").value;
+  const current = Number(item[variant] || 0);
+  if(direction < 0 && current < amount){
+    toast(t("insufficient", { stock:current }));
+    return;
+  }
+
+  const button = direction > 0 ? $("btnBarcodeStockIn") : $("btnBarcodeStockOut");
+  setButtonLoading(button, true, "İşleniyor...");
+  try{
+    await applyStockMovement(item, direction, amount, variant, "Barkod ile hızlı stok işlemi");
+    closeBarcodeActionModal();
+    toast(direction > 0 ? t("savedIn", { amount, name:currentPersonnelName }) : t("savedOut", { amount, name:currentPersonnelName }));
+    await loadAll();
+  }catch(error){
+    toast(error.message);
+  }finally{
+    setButtonLoading(button, false);
+  }
 }
 
 async function scanBarcodeFrame(){
@@ -1497,6 +2044,9 @@ function setupEvents(){
   $("btnClear").addEventListener("click", clearForm);
   $("btnSearch").addEventListener("click", doSearch);
   $("searchInput").addEventListener("keydown", event => { if(event.key === "Enter") doSearch(); });
+  $("btnExportStockExcel").addEventListener("click", exportStockExcel);
+  $("btnImportStockExcel").addEventListener("click", () => $("stockExcelFile").click());
+  $("stockExcelFile").addEventListener("change", event => importStockExcel(event.target.files[0]));
   $("operationSearch").addEventListener("input", renderOperationList);
   $("operationTypeFilter").addEventListener("change", renderOperationList);
   $("btnBarcodeFind").addEventListener("click", () => findBarcodeProduct($("barcodeSearch").value));
@@ -1504,6 +2054,10 @@ function setupEvents(){
   $("btnBarcodeCamera").addEventListener("click", openBarcodeScanner);
   $("btnCloseScanner").addEventListener("click", closeBarcodeScanner);
   $("scannerModal").addEventListener("click", event => { if(event.target.id === "scannerModal") closeBarcodeScanner(); });
+  $("btnCloseBarcodeAction").addEventListener("click", closeBarcodeActionModal);
+  $("btnBarcodeStockIn").addEventListener("click", () => confirmBarcodeStockOperation(1));
+  $("btnBarcodeStockOut").addEventListener("click", () => confirmBarcodeStockOperation(-1));
+  $("barcodeActionModal").addEventListener("click", event => { if(event.target.id === "barcodeActionModal") closeBarcodeActionModal(); });
   $("btnBoxSearch").addEventListener("click", () => renderBoxes($("boxSearch").value.trim()));
   $("boxSearch").addEventListener("keydown", event => { if(event.key === "Enter") renderBoxes($("boxSearch").value.trim()); });
   $("btnPayment").addEventListener("click", savePayment);
@@ -1544,6 +2098,7 @@ function setupEvents(){
     }
     if(event.key === "Escape"){
       if(!$("scannerModal").classList.contains("hidden")) closeBarcodeScanner();
+      else if(!$("barcodeActionModal").classList.contains("hidden")) closeBarcodeActionModal();
       else if(!$("adminModal").classList.contains("hidden")) closeAdminModal();
       else if(!$("operationModal").classList.contains("hidden")) closeOperationModal();
       else if(!$("editModal").classList.contains("hidden")) closeEditModal();
@@ -1575,6 +2130,7 @@ applyTheme(localStorage.getItem("koli_theme") || "midnight", false);
 setLanguage(currentLanguage, false);
 initPersonnelProfile();
 setupEvents();
+syncAdminStockUi();
 setReportPeriod("today");
 initSupabase();
 checkUpdateButton();
