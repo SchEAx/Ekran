@@ -22,7 +22,7 @@
       <p data-i18n="appSubtitle">Ekran &amp; Çerçeve stok sistemi</p>
     </div>
     <div class="topbarRight">
-      <button type="button" id="btnAdminEntry" class="adminEntryButton"><span>🔐</span><b data-i18n="adminLogin">Admin Girişi</b></button>
+      <button type="button" id="btnAdminEntry" class="adminEntryButton hidden"><span>🔐</span><b data-i18n="adminLogin">Admini Etkinleştir</b></button>
       <button type="button" id="btnProfile" class="profileButton" title="Personel profili">
         <span>👤</span><b id="profileName">Personel</b><small id="profileRole">Personel</small>
       </button>
@@ -143,11 +143,11 @@
     <section id="tab-islem" class="panel active">
       <div class="card">
         <h2 data-i18n="operationTitle">Stok Giriş / Çıkış</h2>
-        <p class="muted sectionHint" data-i18n="operationHint">Ürünü bul veya barkodu kamerayla okut. Personel işlemleri 1 adet olarak kaydedilir; Admin modunda toplu adet seçilebilir.</p>
+        <p class="muted sectionHint" data-i18n="operationHint">Ürünü bul veya barkodu kamerayla okut. Personel işlemleri 1 adet olarak kaydedilir; Sabit Admin SchEAx toplu adet seçebilir.</p>
         <div class="barcodeBox">
           <div>
             <h3 data-i18n="quickBarcode">⚡ Barkodla Hızlı İşlem</h3>
-            <p class="muted" data-i18n="quickBarcodeHint">Telefon kamerasıyla okut; ürün penceresinden Giriş veya Çıkış seç. Personelde her işlem 1 adet, adminde adet seçilebilir.</p>
+            <p class="muted" data-i18n="quickBarcodeHint">Telefon kamerasıyla okut; ürün penceresinden Giriş veya Çıkış seç. Personelde her işlem 1 adet, Sabit Admin SchEAx adet seçebilir.</p>
           </div>
           <div class="barcodeActions">
             <input id="barcodeSearch" data-i18n-placeholder="barcodePlaceholder" placeholder="Barkodu okut veya numarayı yaz" autocomplete="off" inputmode="numeric" />
@@ -185,7 +185,7 @@
           </div>
         </div>
         <div class="excelHelp">
-          <b>Barkod toplu düzenleme:</b> Excel'deki <b>ID (DOKUNMA)</b> sütununu değiştirme. <b>Barkod</b> sütununu doldurup dosyayı geri yükle. Barkodlar metin olarak dışa aktarılır; başında 0 varsa korunur. <b>Excel yükleme yalnızca Admin modunda açıktır.</b>
+          <b>Barkod toplu düzenleme:</b> Excel'deki <b>ID (DOKUNMA)</b> sütununu değiştirme. <b>Barkod</b> sütununu doldurup dosyayı geri yükle. Barkodlar metin olarak dışa aktarılır; başında 0 varsa korunur. <b>Excel yükleme yalnızca Sabit Admin SchEAx hesabında açıktır.</b>
           <span id="excelStatus" class="muted"></span>
         </div>
         <div id="stockList" class="list"></div>
@@ -239,7 +239,7 @@
     <section id="tab-hareket" class="panel">
       <div class="card">
         <div class="reportHead">
-          <div><h2>Personel Hareketleri</h2><p class="muted sectionHint">Bu alan yalnızca admin PIN’i ile açılır.</p></div>
+          <div><h2>Personel Hareketleri</h2><p class="muted sectionHint">Bu alan yalnızca Sabit Admin SchEAx hesabında açılır.</p></div>
           <button type="button" id="btnExportMovements">CSV İndir</button>
         </div>
         <div class="periodButtons">
@@ -280,12 +280,11 @@
             <button type="button" id="btnChangePersonnel" data-i18n="changePersonnel">Personeli Değiştir</button>
           </div>
           <div id="adminChangePinArea" class="subcard hidden">
-            <h3>Admin PIN Değiştir</h3>
-            <div class="grid twoCols">
-              <label>Mevcut PIN<input id="currentAdminPin" type="password" inputmode="numeric" /></label>
-              <label>Yeni PIN<input id="newAdminPin" type="password" inputmode="numeric" minlength="4" /></label>
-            </div>
-            <button type="button" id="btnChangeAdminPin">PIN’i Değiştir</button>
+            <h3>👑 Sabit Admin</h3>
+            <p class="muted">Admin hesabı SchEAx’e sabitlendi. Ayrı Admin PIN değişikliği kullanılmaz.</p>
+            <input id="currentAdminPin" class="hidden" type="password" />
+            <input id="newAdminPin" class="hidden" type="password" />
+            <button type="button" id="btnChangeAdminPin" class="hidden">PIN’i Değiştir</button>
           </div>
         </div>
         <div class="card">
@@ -327,7 +326,7 @@
       <div class="grid"><label>Koli No<input id="editBoxNo" /></label><label>Raf Konumu<input id="editShelfLocation" /></label><label>Barkod<input id="editBarcode" autocomplete="off" inputmode="numeric" /></label></div>
       <div id="editFrameStock" class="subcard hidden"><div class="grid twoCols"><label>Soketli Stok<input id="editSocketQuantity" type="number" min="0" /></label><label>Soketsiz Stok<input id="editNoSocketQuantity" type="number" min="0" /></label></div></div>
       <div id="editGeneralStock" class="subcard hidden"><label>Toplam Stok<input id="editQuantity" type="number" min="0" /></label></div>
-      <p id="editStockAdminNote" class="muted singleUnitHint hidden">🔒 Stok miktarını doğrudan düzenleme yalnızca Admin modunda açıktır.</p>
+      <p id="editStockAdminNote" class="muted singleUnitHint hidden">🔒 Stok miktarını doğrudan düzenleme yalnızca Sabit Admin SchEAx hesabında açıktır.</p>
       <div class="imagePick editImagePick">
         <span>Ürün Resmi</span>
         <div class="imageActions">
@@ -378,10 +377,10 @@
   </div>
   <div id="adminModal" class="editModal hidden">
     <div class="editCard adminLoginCard">
-      <div class="itemHead"><div><h2>🔐 Admin Girişi</h2><p class="muted">Admin PIN’ini girince bütün sekmeler ve personel izinleri açılır.</p></div><button type="button" id="btnCloseAdminModal">×</button></div>
-      <label>Admin PIN<input id="adminPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Admin PIN" /></label>
-      <div class="actions"><button type="button" id="btnAdminLogin" class="primary">Admin Olarak Gir</button><button type="button" id="btnCancelAdminLogin">Vazgeç</button></div>
-      <p class="muted adminHelp">PIN çalışmıyorsa ZIP içindeki <b>ADMIN_SIFRE_SIFIRLA.sql</b> dosyasını Supabase SQL Editor’da bir kez çalıştır.</p>
+      <div class="itemHead"><div><h2>👑 Sabit Admin Eşleştirme</h2><p class="muted">Bu işlem yalnızca ilk seferde gerekir. Mevcut Admin PIN’ini gir; sistem onu SchEAx personel PIN’iyle eşleştirir. Sonrasında SchEAx her girişte otomatik admin olur.</p></div><button type="button" id="btnCloseAdminModal">×</button></div>
+      <label>Mevcut Admin PIN<input id="adminPin" type="password" inputmode="numeric" autocomplete="current-password" placeholder="Mevcut Admin PIN" /></label>
+      <div class="actions"><button type="button" id="btnAdminLogin" class="primary">SchEAx’i Sabit Admin Yap</button><button type="button" id="btnCancelAdminLogin">Vazgeç</button></div>
+      <p class="muted adminHelp">Eşleştirmeden sonra ayrı Admin Girişi / Çıkışı kullanılmaz. Başka personeller admin olamaz; yalnızca kendilerine verdiğin sekme yetkilerini kullanırlar.</p>
     </div>
   </div>
   <div id="barcodeActionModal" class="editModal hidden">

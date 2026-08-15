@@ -1,4 +1,4 @@
-const APP_VERSION = "2.5.0";
+const APP_VERSION = "2.6.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -11,6 +11,7 @@ const THEMES = {
   light: "#f8fafc"
 };
 
+const FIXED_ADMIN_NAME = "SchEAx";
 const DEFAULT_PERSONNEL_TABS = ["islem", "ayar"];
 const ADMIN_ONLY_TABS = ["personel", "hareket"];
 const GRANTABLE_TABS = ["urun", "liste", "koli", "odeme"];
@@ -26,10 +27,10 @@ const TAB_LABELS = {
 const I18N = {
   tr:{
     appTitle:"🖥️ Ekran & Çerçeve", appSubtitle:"Ekran & Çerçeve stok sistemi",
-    adminLogin:"Admin Girişi", adminLogout:"Admin Çıkışı", personnel:"Personel", admin:"Admin",
+    adminLogin:"Admini Etkinleştir", adminLogout:"Sabit Admin", fixedAdmin:"Sabit Admin", personnel:"Personel", admin:"Admin",
     tabProduct:"Ürün Ekle", tabOperation:"Stok Giriş / Çıkış", tabStockList:"Stok Listesi", tabBoxes:"Koli Yönetimi", tabPayments:"Ödemeler", tabPersonnel:"Personeller", tabMovements:"Hareketler", tabSettings:"Ayarlar",
-    operationTitle:"Stok Giriş / Çıkış", operationHint:"Ürünü bul veya barkodu kamerayla okut. Personel işlemleri 1 adet olarak kaydedilir; Admin modunda toplu adet seçilebilir.",
-    quickBarcode:"⚡ Barkodla Hızlı İşlem", quickBarcodeHint:"Telefon kamerasıyla okut; ürün penceresinden Giriş veya Çıkış seç. Personelde her işlem 1 adet, adminde adet seçilebilir.", barcodePlaceholder:"Barkodu okut veya numarayı yaz", findProduct:"Ürünü Bul", scanCamera:"📷 Kamera ile Tara",
+    operationTitle:"Stok Giriş / Çıkış", operationHint:"Ürünü bul veya barkodu kamerayla okut. Personel işlemleri 1 adet olarak kaydedilir; Sabit Admin SchEAx toplu adet seçebilir.",
+    quickBarcode:"⚡ Barkodla Hızlı İşlem", quickBarcodeHint:"Telefon kamerasıyla okut; ürün penceresinden Giriş veya Çıkış seç. Personelde her işlem 1 adet, Sabit Admin SchEAx adet seçebilir.", barcodePlaceholder:"Barkodu okut veya numarayı yaz", findProduct:"Ürünü Bul", scanCamera:"📷 Kamera ile Tara",
     searchProduct:"Ürün Ara", searchPlaceholder:"Ürün, araç, koli no veya raf ara...", productType:"Ürün Tipi", all:"Tümü", frame:"Çerçeve", multimedia:"Multimedya",
     personnelProfile:"Personel Profili", registeredPersonnel:"Bu cihazda kayıtlı personel:", changePersonnel:"Personeli Değiştir",
     languageTitle:"Dil / اللغة", languageHint:"Uygulama dilini seç. Seçim bu cihazda kayıtlı kalır.", themeColors:"Tema Renkleri", themeHint:"Seçtiğin tema bu cihazda kayıtlı kalır.", update:"Güncelle",
@@ -47,7 +48,7 @@ const I18N = {
   },
   ar:{
     appTitle:"🖥️ Ekran & Çerçeve", appSubtitle:"نظام مخزون الشاشات والإطارات",
-    adminLogin:"دخول المدير", adminLogout:"خروج المدير", personnel:"موظف", admin:"مدير",
+    adminLogin:"تفعيل المدير", adminLogout:"مدير ثابت", fixedAdmin:"مدير ثابت", personnel:"موظف", admin:"مدير",
     tabProduct:"إضافة منتج", tabOperation:"إدخال / إخراج المخزون", tabStockList:"قائمة المخزون", tabBoxes:"إدارة الصناديق", tabPayments:"المدفوعات", tabPersonnel:"الموظفون", tabMovements:"الحركات", tabSettings:"الإعدادات",
     operationTitle:"إدخال / إخراج المخزون", operationHint:"ابحث عن المنتج أو امسح الباركود بالكاميرا. الموظف يسجل قطعة واحدة في كل عملية، والمدير يمكنه تحديد كمية متعددة.",
     quickBarcode:"⚡ عملية سريعة بالباركود", quickBarcodeHint:"امسح بالكاميرا ثم اختر إدخال أو إخراج. الموظف يسجل قطعة واحدة في كل عملية، والمدير يمكنه تحديد الكمية.", barcodePlaceholder:"امسح الباركود أو اكتب الرقم", findProduct:"البحث عن المنتج", scanCamera:"📷 المسح بالكاميرا",
@@ -153,17 +154,44 @@ function createDeviceId(){
   return `device-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }
 
+function isFixedAdminName(name = currentPersonnelName){
+  return normalize(name).replace(/\s+/g, "") === normalize(FIXED_ADMIN_NAME).replace(/\s+/g, "");
+}
+
+function isFixedAdminPersonnel(){
+  return Boolean(currentPersonnelName && isFixedAdminName(currentPersonnelName));
+}
+
+function refreshPermissionSensitiveUi(){
+  if(!allItems.length) return;
+  const query = normalize($("searchInput")?.value?.trim() || "");
+  const list = query ? allItems.filter(item => itemSearchText(item).includes(query)) : allItems;
+  renderList(list);
+}
+
 function updateProfileUi(){
   const name = currentPersonnelName || t("personnel");
+  const fixedAdmin = isFixedAdminPersonnel();
   $("profileName").textContent = name;
   $("profileRole").textContent = adminUnlocked ? t("admin") : t("personnel");
   $("settingsPersonnelName").textContent = name;
-  $("adminChangePinArea").classList.toggle("hidden", !adminUnlocked);
-  $("btnAdminEntry").classList.toggle("adminActive", adminUnlocked);
-  $("btnAdminEntry").querySelector("b").textContent = adminUnlocked ? t("adminLogout") : t("adminLogin");
+
+  // SchEAx sabit admindir. Ayrı Admin Çıkışı yoktur; diğer personeller admin düğmesini hiç görmez.
+  $("adminChangePinArea")?.classList.add("hidden");
+  const adminButton = $("btnAdminEntry");
+  if(adminButton){
+    adminButton.classList.toggle("hidden", !fixedAdmin);
+    adminButton.classList.toggle("adminActive", adminUnlocked);
+    adminButton.classList.toggle("fixedAdminActive", adminUnlocked);
+    adminButton.querySelector("span").textContent = adminUnlocked ? "👑" : "🔐";
+    adminButton.querySelector("b").textContent = adminUnlocked ? t("fixedAdmin") : t("adminLogin");
+  }
+
   applyTabPermissions();
   syncAdminStockUi();
+  refreshPermissionSensitiveUi();
 }
+
 
 function syncAdminStockUi(){
   $("operationAmountWrap")?.classList.toggle("hidden", !adminUnlocked);
@@ -222,15 +250,19 @@ async function savePersonnelProfile(){
   const button = $("btnSavePersonnel");
   setButtonLoading(button, true, "Giriş yapılıyor...");
   try{
+    // Personel değişirken önceki admin oturumunu taşıma.
+    adminUnlocked = false;
+    adminPinSession = "";
     const loggedIn = await syncPersonnelProfile(name, pin);
     if(!loggedIn) return;
     currentPersonnelName = name;
     currentPersonnelPin = pin;
     localStorage.setItem("koli_personnel_name", name);
     $("personnelModal").classList.add("hidden");
+    await syncFixedAdminState(true);
     updateProfileUi();
     switchTab("islem");
-    toast(t("loginWelcome", { name }));
+    toast(adminUnlocked ? `${name} sabit admin olarak giriş yaptı.` : t("loginWelcome", { name }));
   }finally{
     setButtonLoading(button, false);
   }
@@ -1603,11 +1635,47 @@ function setReportPeriod(mode){
   if(adminUnlocked) loadMovements();
 }
 
+async function syncFixedAdminState(promptIfNeeded = false){
+  adminUnlocked = false;
+  adminPinSession = "";
+  if(!supabaseClient || !isFixedAdminPersonnel() || !currentPersonnelPin) return false;
+
+  try{
+    const { data, error } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:currentPersonnelPin });
+    if(error) throw new Error(error.message);
+    if(data === true){
+      adminUnlocked = true;
+      adminPinSession = currentPersonnelPin;
+      updateProfileUi();
+      setReportPeriod("today");
+      return true;
+    }
+  }catch(error){
+    console.warn("Sabit admin doğrulaması yapılamadı:", error);
+  }
+
+  updateProfileUi();
+  if(promptIfNeeded){
+    openAdminModal();
+    toast("İlk eşleştirme: mevcut Admin PIN’ini bir kez gir. Sonrasında SchEAx personel PIN’i sabit admin olur.");
+  }
+  return false;
+}
+
 function openAdminModal(){
+  if(!isFixedAdminPersonnel()){
+    toast(`Admin yalnızca ${FIXED_ADMIN_NAME} hesabına sabitlenmiştir.`);
+    return;
+  }
+  if(adminUnlocked){
+    toast(`${FIXED_ADMIN_NAME} zaten Sabit Admin olarak açık.`);
+    return;
+  }
   $("adminPin").value = "";
   $("adminModal").classList.remove("hidden");
   setTimeout(() => $("adminPin").focus(), 50);
 }
+
 
 function closeAdminModal(){
   $("adminModal").classList.add("hidden");
@@ -1619,71 +1687,75 @@ async function adminLogin(){
     toast("Supabase bağlantısı bulunamadı.");
     return;
   }
-  const pin = $("adminPin").value.trim();
-  if(!pin){
-    toast("Admin PIN’i gir.");
+  if(!isFixedAdminPersonnel() || !currentPersonnelPin){
+    toast(`Admin yalnızca ${FIXED_ADMIN_NAME} hesabına sabitlenmiştir.`);
+    return;
+  }
+  const oldAdminPin = $("adminPin").value.trim();
+  if(!oldAdminPin){
+    toast("Mevcut Admin PIN’ini gir.");
     return;
   }
   const button = $("btnAdminLogin");
-  setButtonLoading(button, true, "Kontrol ediliyor...");
+  setButtonLoading(button, true, "Eşleştiriliyor...");
   try{
-    const { data, error } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:pin });
+    const { data, error } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:oldAdminPin });
     if(error){
       if(/crypt\(text, text\).*does not exist/i.test(error.message)){
-        throw new Error("Supabase şifre fonksiyonu eski. Güncel SUPABASE_KURULUM.sql dosyasını tekrar çalıştır.");
+        throw new Error("Supabase şifre fonksiyonu eski. Güncel kurulum SQL’ini tekrar çalıştır.");
       }
       throw new Error(error.message);
     }
     if(data !== true){
-      toast("Admin PIN’i yanlış.");
+      toast("Mevcut Admin PIN’i yanlış.");
       return;
     }
+
+    // Bir kereye mahsus mevcut admin PIN'ini SchEAx personel PIN'iyle eşitleriz.
+    if(oldAdminPin !== currentPersonnelPin){
+      const { data:changed, error:changeError } = await supabaseClient.rpc("change_depo_admin_pin", {
+        p_current_pin:oldAdminPin,
+        p_new_pin:currentPersonnelPin
+      });
+      if(changeError) throw new Error(changeError.message);
+      if(changed !== true) throw new Error("Admin PIN eşleştirmesi tamamlanamadı.");
+    }
+
+    const { data:verified, error:verifyError } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:currentPersonnelPin });
+    if(verifyError) throw new Error(verifyError.message);
+    if(verified !== true) throw new Error("Sabit admin doğrulaması başarısız oldu.");
+
     adminUnlocked = true;
-    adminPinSession = pin;
+    adminPinSession = currentPersonnelPin;
     closeAdminModal();
     updateProfileUi();
     setReportPeriod("today");
     loadPersonnelAdmin();
-    toast("Admin modu açıldı. Tüm sekmeler görünür durumda.");
+    toast(`${FIXED_ADMIN_NAME} Sabit Admin olarak eşleştirildi. Bundan sonra ayrı Admin Girişi gerekmez.`);
   }catch(error){
-    toast("Admin girişi açılamadı: " + error.message);
+    toast("Sabit admin eşleştirilemedi: " + error.message);
   }finally{
     setButtonLoading(button, false);
   }
 }
 
+
 function adminLogout(){
+  if(isFixedAdminPersonnel()){
+    toast(`${FIXED_ADMIN_NAME} sabit admindir. Admin modundan çıkış kapatıldı; personel değiştirirsen admin yetkisi kapanır.`);
+    return;
+  }
   adminUnlocked = false;
   adminPinSession = "";
   movementRows = [];
   updateProfileUi();
-  toast("Admin modu kapatıldı.");
 }
 
+
 async function changeAdminPin(){
-  const currentPin = $("currentAdminPin").value.trim();
-  const newPin = $("newAdminPin").value.trim();
-  if(newPin.length < 4){
-    toast("Yeni PIN en az 4 haneli olmalı.");
-    return;
-  }
-  const { data, error } = await supabaseClient.rpc("change_depo_admin_pin", {
-    p_current_pin:currentPin,
-    p_new_pin:newPin
-  });
-  if(error){
-    toast("PIN değiştirilemedi: " + error.message);
-    return;
-  }
-  if(data !== true){
-    toast("Mevcut PIN yanlış.");
-    return;
-  }
-  adminPinSession = newPin;
-  $("currentAdminPin").value = "";
-  $("newAdminPin").value = "";
-  toast("Admin PIN’i değiştirildi.");
+  toast(`Sabit Admin PIN’i, ${FIXED_ADMIN_NAME} personel PIN’i ile aynıdır. Ayrı Admin PIN değişikliği kapatıldı.`);
 }
+
 
 async function loadPersonnelAdmin(){
   if(!adminUnlocked || !adminPinSession) return;
@@ -1741,33 +1813,39 @@ async function togglePersonnelRegistration(){
 
 function renderPersonnelAdmin(){
   $("personnelAdminList").innerHTML = personnelAdminRows.map(person => {
+    const fixedAdmin = isFixedAdminName(person.personnel_name);
     const allowed = new Set(Array.isArray(person.allowed_tabs) ? person.allowed_tabs : DEFAULT_PERSONNEL_TABS);
     const lastSeen = person.last_seen_at ? formatMovementDate(person.last_seen_at) : "-";
     return `
       <div class="item permissionCard" data-personnel-card="${escapeHtml(person.id)}">
         <div class="itemHead">
-          <div><h3>👤 ${escapeHtml(person.personnel_name)}</h3><p class="muted">Son giriş: ${escapeHtml(lastSeen)}</p></div>
-          <span class="badge">${person.is_active === false ? "Pasif" : "Aktif"}</span>
+          <div><h3>${fixedAdmin ? "👑" : "👤"} ${escapeHtml(person.personnel_name)}</h3><p class="muted">Son giriş: ${escapeHtml(lastSeen)}</p></div>
+          <span class="badge">${fixedAdmin ? "Sabit Admin" : (person.is_active === false ? "Pasif" : "Aktif")}</span>
         </div>
-        <div class="fixedPermissions"><span class="badge permissionFixed">✓ ${t("tabOperation")}</span><span class="badge permissionFixed">✓ ${t("tabSettings")}</span></div>
+        <div class="fixedPermissions"><span class="badge permissionFixed">✓ ${t("tabOperation")}</span><span class="badge permissionFixed">✓ ${t("tabSettings")}</span>${fixedAdmin ? `<span class="badge permissionFixed">✓ Tüm Yetkiler</span>` : ""}</div>
         <div class="permissionGrid">
           ${GRANTABLE_TABS.map(tab => `
             <label class="permissionChoice">
-              <input type="checkbox" data-tab-permission="${tab}" ${allowed.has(tab) ? "checked" : ""} />
+              <input type="checkbox" data-tab-permission="${tab}" ${(fixedAdmin || allowed.has(tab)) ? "checked" : ""} ${fixedAdmin ? "disabled" : ""} />
               <span>${escapeHtml(t(TAB_LABELS[tab]))}</span>
             </label>`).join("")}
         </div>
-        <button type="button" class="primary" data-action="save-personnel-tabs" data-id="${escapeHtml(person.id)}">Sekme İzinlerini Kaydet</button>
-        <div class="personnelSecurityActions">
-          <input type="password" inputmode="numeric" minlength="4" maxlength="12" data-personnel-new-pin placeholder="Yeni PIN (en az 4 hane)" />
-          <button type="button" data-action="set-personnel-pin" data-id="${escapeHtml(person.id)}">PIN Belirle / Sıfırla</button>
-          <button type="button" class="${person.is_active === false ? "primary" : "danger"}" data-action="toggle-personnel-active" data-id="${escapeHtml(person.id)}" data-active="${person.is_active !== false}">${person.is_active === false ? "Personeli Yeniden Aktifleştir" : "Personeli Sil / Pasife Al"}</button>
-        </div>
+        ${fixedAdmin
+          ? `<p class="muted">🔒 ${escapeHtml(FIXED_ADMIN_NAME)} sabit admindir; yetkileri, PIN’i ve aktifliği bu ekrandan değiştirilemez.</p>`
+          : `<button type="button" class="primary" data-action="save-personnel-tabs" data-id="${escapeHtml(person.id)}">Sekme İzinlerini Kaydet</button>
+            <div class="personnelSecurityActions">
+              <input type="password" inputmode="numeric" minlength="4" maxlength="12" data-personnel-new-pin placeholder="Yeni PIN (en az 4 hane)" />
+              <button type="button" data-action="set-personnel-pin" data-id="${escapeHtml(person.id)}">PIN Belirle / Sıfırla</button>
+              <button type="button" class="${person.is_active === false ? "primary" : "danger"}" data-action="toggle-personnel-active" data-id="${escapeHtml(person.id)}" data-active="${person.is_active !== false}">${person.is_active === false ? "Personeli Yeniden Aktifleştir" : "Personeli Sil / Pasife Al"}</button>
+            </div>`}
       </div>`;
-  }).join("") || `<p class="muted">Henüz personel kaydı yok. Personeller yeni sürümde adını girince burada görünecek.</p>`;
+  }).join("") || `<p class="muted">Henüz personel kaydı yok. Personeller adını girince burada görünecek.</p>`;
 }
 
+
 async function setPersonnelPin(personnelId){
+  const target = personnelAdminRows.find(person => String(person.id) === String(personnelId));
+  if(target && isFixedAdminName(target.personnel_name)){ toast(`${FIXED_ADMIN_NAME} sabit admin PIN’i bu ekrandan değiştirilemez.`); return; }
   const card = document.querySelector(`[data-personnel-card="${personnelId}"]`);
   const newPin = card?.querySelector("[data-personnel-new-pin]")?.value.trim() || "";
   if(newPin.length < 4){ toast("Yeni personel PIN en az 4 haneli olmalı."); return; }
@@ -1783,6 +1861,8 @@ async function setPersonnelPin(personnelId){
 }
 
 async function togglePersonnelActive(personnelId, currentlyActive){
+  const target = personnelAdminRows.find(person => String(person.id) === String(personnelId));
+  if(target && isFixedAdminName(target.personnel_name)){ toast(`${FIXED_ADMIN_NAME} sabit admin hesabı pasife alınamaz.`); return; }
   const nextActive = !currentlyActive;
   if(!nextActive && !confirm("Bu personel pasife alınacak ve artık giriş/stok işlemi yapamayacak. Devam edilsin mi?")) return;
   try{
@@ -1798,6 +1878,8 @@ async function togglePersonnelActive(personnelId, currentlyActive){
 
 async function savePersonnelTabs(personnelId){
   if(!adminUnlocked) return;
+  const target = personnelAdminRows.find(person => String(person.id) === String(personnelId));
+  if(target && isFixedAdminName(target.personnel_name)){ toast(`${FIXED_ADMIN_NAME} sabit admin olduğundan tüm yetkiler zaten açıktır.`); return; }
   const card = document.querySelector(`[data-personnel-card="${personnelId}"]`);
   if(!card) return;
   const extras = [...card.querySelectorAll("[data-tab-permission]:checked")].map(input => input.dataset.tabPermission);
