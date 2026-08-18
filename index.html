@@ -14,6 +14,7 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script>
 </head>
 <body>
   <header class="topbar">
@@ -410,7 +411,7 @@
   <div id="scannerModal" class="editModal hidden">
     <div class="editCard scannerCard">
       <div class="itemHead"><div><h2 data-i18n="showBarcode">Barkodu Kameraya Göster</h2><p class="muted" data-i18n="holdBarcode">Barkodu çerçevenin ortasında tut.</p></div><button type="button" id="btnCloseScanner">×</button></div>
-      <div class="scannerViewport"><video id="scannerVideo" playsinline muted></video><div class="scannerGuide"></div></div>
+      <div class="scannerViewport"><video id="scannerVideo" playsinline webkit-playsinline muted autoplay></video><div class="scannerGuide"></div></div>
       <p id="scannerStatus" class="muted" data-i18n="cameraPreparing">Kamera hazırlanıyor...</p>
     </div>
   </div>

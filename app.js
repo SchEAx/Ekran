@@ -1,4 +1,4 @@
-const APP_VERSION = "2.7.0";
+const APP_VERSION = "2.8.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -93,6 +93,9 @@ let scannerStream = null;
 let scannerFrameId = null;
 let scannerBusy = false;
 let scannerDetector = null;
+let scannerZxingReader = null;
+let scannerZxingControls = null;
+let scannerMode = "";
 let imageModalHistoryActive = false;
 
 const $ = (id) => document.getElementById(id);
@@ -1611,65 +1614,145 @@ async function confirmBarcodeStockOperation(direction){
   }
 }
 
+function isIOSDevice(){
+  const ua = navigator.userAgent || "";
+  return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+}
+
+function isStandalonePWA(){
+  return window.matchMedia?.("(display-mode: standalone)")?.matches || navigator.standalone === true;
+}
+
+function finishBarcodeScan(value){
+  const barcode = String(value || "").trim();
+  if(!barcode || scannerBusy) return;
+  scannerBusy = true;
+  closeBarcodeScanner();
+  findBarcodeProduct(barcode);
+}
+
 async function scanBarcodeFrame(){
   if(!scannerStream || !scannerDetector) return;
   const video = $("scannerVideo");
   if(video.readyState >= 2 && !scannerBusy){
-    scannerBusy = true;
     try{
       const codes = await scannerDetector.detect(video);
       if(codes.length){
-        const value = codes[0].rawValue;
-        closeBarcodeScanner();
-        findBarcodeProduct(value);
+        finishBarcodeScan(codes[0].rawValue);
         return;
       }
     }catch(error){
       $("scannerStatus").textContent = t("holdStill");
-    }finally{
-      scannerBusy = false;
     }
   }
   scannerFrameId = requestAnimationFrame(scanBarcodeFrame);
 }
 
-async function openBarcodeScanner(){
-  if(!("BarcodeDetector" in window)){
-    toast(t("cameraUnsupported"));
-    $("barcodeSearch").focus();
-    return;
+async function startNativeBarcodeScanner(){
+  scannerMode = "native";
+  scannerDetector = new BarcodeDetector();
+  scannerStream = await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1280 }, height:{ ideal:720 } },
+    audio:false
+  });
+  const video = $("scannerVideo");
+  video.srcObject = scannerStream;
+  await video.play();
+  $("scannerStatus").textContent = t("holdStill");
+  scanBarcodeFrame();
+}
+
+async function startZxingBarcodeScanner(){
+  if(!window.ZXingBrowser?.BrowserMultiFormatReader){
+    throw new Error("ZXing barkod okuyucu yüklenemedi.");
   }
+
+  scannerMode = "zxing";
+  scannerZxingReader = new ZXingBrowser.BrowserMultiFormatReader(undefined, {
+    delayBetweenScanAttempts: 90,
+    delayBetweenScanSuccess: 400
+  });
+
+  const video = $("scannerVideo");
+  const constraints = {
+    video:{
+      facingMode:{ ideal:"environment" },
+      width:{ ideal:1280 },
+      height:{ ideal:720 }
+    },
+    audio:false
+  };
+
+  scannerZxingControls = await scannerZxingReader.decodeFromConstraints(constraints, video, (result, error, controls) => {
+    if(result && !scannerBusy){
+      const value = typeof result.getText === "function" ? result.getText() : result.text;
+      try{ controls?.stop?.(); }catch(_error){}
+      finishBarcodeScan(value);
+    }
+  });
+  $("scannerStatus").textContent = t("holdStill");
+}
+
+async function openBarcodeScanner(){
   if(!navigator.mediaDevices?.getUserMedia){
     toast("Kamera erişimi bulunamadı. Siteyi HTTPS üzerinden açtığından emin ol.");
     return;
   }
 
+  closeBarcodeScanner();
+  scannerBusy = false;
   $("scannerModal").classList.remove("hidden");
   $("scannerStatus").textContent = t("cameraPreparing");
+  const video = $("scannerVideo");
+  video.setAttribute("playsinline", "");
+  video.setAttribute("webkit-playsinline", "");
+  video.muted = true;
+  video.autoplay = true;
+
   try{
-    scannerDetector = new BarcodeDetector();
-    scannerStream = await navigator.mediaDevices.getUserMedia({
-      video:{ facingMode:{ ideal:"environment" }, width:{ ideal:1280 }, height:{ ideal:720 } },
-      audio:false
-    });
-    $("scannerVideo").srcObject = scannerStream;
-    await $("scannerVideo").play();
-    $("scannerStatus").textContent = t("holdStill");
-    scanBarcodeFrame();
+    // Safari/iOS tarafında BarcodeDetector (Shape Detection API) güvenilir değil.
+    // iPhone/iPad'de ZXing JS kullan; destekleyen diğer tarayıcılarda native API daha hızlıdır.
+    if(isIOSDevice() || !("BarcodeDetector" in window)){
+      await startZxingBarcodeScanner();
+    }else{
+      try{
+        await startNativeBarcodeScanner();
+      }catch(nativeError){
+        closeBarcodeScanner();
+        scannerBusy = false;
+        $("scannerModal").classList.remove("hidden");
+        $("scannerStatus").textContent = t("cameraPreparing");
+        await startZxingBarcodeScanner();
+      }
+    }
   }catch(error){
+    console.error("Barkod kamera hatası:", error);
+    const iosPwa = isIOSDevice() && isStandalonePWA();
     closeBarcodeScanner();
-    toast(t("cameraDenied"));
+    if(iosPwa){
+      toast("iPhone kamerası açılamadı. Kamera iznini kontrol et; olmazsa PWA’yı tamamen kapatıp yeniden aç ve tekrar dene.");
+    }else{
+      toast(t("cameraDenied"));
+    }
   }
 }
 
 function closeBarcodeScanner(){
   if(scannerFrameId) cancelAnimationFrame(scannerFrameId);
   scannerFrameId = null;
+  try{ scannerZxingControls?.stop?.(); }catch(_error){}
+  scannerZxingControls = null;
+  scannerZxingReader = null;
   scannerStream?.getTracks().forEach(track => track.stop());
   scannerStream = null;
   scannerDetector = null;
+  scannerMode = "";
   scannerBusy = false;
-  $("scannerVideo").srcObject = null;
+  const video = $("scannerVideo");
+  if(video){
+    try{ video.pause(); }catch(_error){}
+    video.srcObject = null;
+  }
   $("scannerModal").classList.add("hidden");
 }
 
