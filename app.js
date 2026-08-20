@@ -1,4 +1,4 @@
-const APP_VERSION = "2.9.0";
+const APP_VERSION = "2.10.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -564,6 +564,28 @@ function renderList(list){
   $("stockList").innerHTML = list.length ? list.map(itemHtml).join("") : `<p class="muted">${t("noRecord")}</p>`;
 }
 
+const BARCODE_TOTAL_EXCEL_COLUMNS = [
+  "Barkod",
+  "Toplam Stok",
+  "Konum Sayısı",
+  "Ürün Tipi",
+  "Ürün Adı",
+  "Koli No",
+  "Raf Konumu",
+  "Soketli Stok",
+  "Soketsiz Stok",
+  "Araç Markası",
+  "Araç Modeli",
+  "Model Yılı",
+  "Soket Durumu",
+  "Multimedya Markası",
+  "RAM",
+  "Hafıza",
+  "Ekran İnç",
+  "Not",
+  "Resim URL"
+];
+
 const STOCK_EXCEL_COLUMNS = [
   ["ID (DOKUNMA)", "id"],
   ["Barkod", "barcode"],
@@ -711,6 +733,121 @@ async function exportStockExcel(){
   }catch(error){
     setExcelStatus("");
     toast("Excel indirilemedi: " + error.message);
+  }finally{
+    setButtonLoading(button, false);
+  }
+}
+
+async function exportBarcodeTotalExcel(){
+  if(!canUseTab("liste")){
+    toast("Stok Listesi sekmesi için yetkin bulunmuyor.");
+    return;
+  }
+  if(!window.XLSX){
+    toast("Excel modülü yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenile.");
+    return;
+  }
+  if(!supabaseClient){
+    toast("Supabase bağlantısı hazır değil.");
+    return;
+  }
+
+  const button = $("btnExportBarcodeTotalExcel");
+  setButtonLoading(button, true, "Hazırlanıyor...");
+  setExcelStatus("Barkod toplamları hazırlanıyor...");
+  try{
+    const items = await fetchAllItems();
+    const groups = new Map();
+
+    for(const item of items){
+      const barcode = cleanBarcode(item.barcode);
+      if(!barcode) continue;
+      let group = groups.get(barcode);
+      if(!group){
+        group = {
+          representative:item,
+          total:0,
+          socket:0,
+          noSocket:0,
+          locations:0
+        };
+        groups.set(barcode, group);
+      }
+      group.total += itemTotal(item);
+      group.socket += Number(item.socket_quantity || 0);
+      group.noSocket += Number(item.no_socket_quantity || 0);
+      group.locations += 1;
+    }
+
+    const rows = [...groups.entries()]
+      .sort(([a], [b]) => a.localeCompare(b, "tr", {numeric:true, sensitivity:"base"}))
+      .map(([barcode, group]) => {
+        const item = group.representative;
+        return {
+          "Barkod": excelCellText(barcode),
+          "Toplam Stok": group.total,
+          "Konum Sayısı": group.locations,
+          "Ürün Tipi": productTypeExcelLabel(item.product_type),
+          "Ürün Adı": excelCellText(item.product_name),
+          "Koli No": excelCellText(item.box_no),
+          "Raf Konumu": excelCellText(item.shelf_location),
+          "Soketli Stok": item.product_type === "cerceve" ? group.socket : "",
+          "Soketsiz Stok": item.product_type === "cerceve" ? group.noSocket : "",
+          "Araç Markası": excelCellText(item.vehicle_brand),
+          "Araç Modeli": excelCellText(item.vehicle_model),
+          "Model Yılı": excelCellText(item.vehicle_year),
+          "Soket Durumu": excelCellText(item.socket_included),
+          "Multimedya Markası": excelCellText(item.media_brand),
+          "RAM": excelCellText(item.ram),
+          "Hafıza": excelCellText(item.storage),
+          "Ekran İnç": excelCellText(item.screen_inch),
+          "Not": excelCellText(item.note),
+          "Resim URL": excelCellText(item.image_url)
+        };
+      });
+
+    if(!rows.length){
+      throw new Error("Barkod atanmış ürün bulunamadı.");
+    }
+
+    const sheet = XLSX.utils.json_to_sheet(rows, { header:BARCODE_TOTAL_EXCEL_COLUMNS });
+    sheet["!cols"] = [
+      {wch:20},{wch:13},{wch:13},{wch:14},{wch:34},{wch:14},{wch:18},{wch:13},{wch:15},
+      {wch:18},{wch:22},{wch:15},{wch:15},{wch:22},{wch:12},{wch:14},{wch:12},{wch:35},{wch:45}
+    ];
+
+    // Barkodu metin tut; GI000001 gibi değerler olduğu gibi kalsın.
+    const range = XLSX.utils.decode_range(sheet["!ref"] || "A1:A1");
+    for(let r = 1; r <= range.e.r; r++){
+      const address = XLSX.utils.encode_cell({r, c:0});
+      if(sheet[address]){
+        sheet[address].t = "s";
+        sheet[address].v = String(sheet[address].v ?? "");
+        sheet[address].z = "@";
+      }
+    }
+
+    const infoRows = [
+      ["Ekran & Çerçeve - Toplam Stok Raporu"],
+      ["1", "Bu dosyada her barkod yalnızca 1 satırdır."],
+      ["2", "Toplam Stok, aynı barkoda bağlı tüm koli/raf kayıtlarının toplamıdır."],
+      ["3", "Ürün bilgileri aynı barkod grubundaki ilk kayıttan alınır."],
+      ["4", "Çerçevelerde Soketli Stok ve Soketsiz Stok da tüm konumlardan toplanır."],
+      ["5", "Bu dosya rapor amaçlıdır; toplu güncelleme için normal Excel İndir dosyasını kullan."]
+    ];
+    const infoSheet = XLSX.utils.aoa_to_sheet(infoRows);
+    infoSheet["!cols"] = [{wch:10},{wch:100}];
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, "Toplam Stok");
+    XLSX.utils.book_append_sheet(workbook, infoSheet, "Bilgi");
+    const today = new Date().toISOString().slice(0,10);
+    XLSX.writeFile(workbook, `Ekran-Cerceve-Toplam-Stok-${today}.xlsx`);
+    setExcelStatus(`${rows.length.toLocaleString("tr-TR")} barkod tekilleştirilerek toplam stok Excel'i indirildi.`);
+    toast("Toplam stok Excel dosyası indirildi.");
+  }catch(error){
+    setExcelStatus("");
+    toast("Toplam stok Excel'i indirilemedi: " + error.message);
   }finally{
     setButtonLoading(button, false);
   }
@@ -2313,6 +2450,7 @@ function setupEvents(){
   $("btnSearch").addEventListener("click", doSearch);
   $("searchInput").addEventListener("keydown", event => { if(event.key === "Enter") doSearch(); });
   $("btnExportStockExcel").addEventListener("click", exportStockExcel);
+  $("btnExportBarcodeTotalExcel").addEventListener("click", exportBarcodeTotalExcel);
   $("btnImportStockExcel").addEventListener("click", () => $("stockExcelFile").click());
   $("stockExcelFile").addEventListener("change", event => importStockExcel(event.target.files[0]));
   $("operationSearch").addEventListener("input", renderOperationList);
