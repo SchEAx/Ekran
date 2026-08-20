@@ -1,4 +1,4 @@
-const APP_VERSION = "2.8.0";
+const APP_VERSION = "2.9.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -44,7 +44,7 @@ const I18N = {
     enterName:"Personel adını en az 2 karakter gir.", noPermission:"Bu sekme için yetkin bulunmuyor.", invalidAmount:"Adet kısmına 1 veya daha büyük tam sayı gir.",
     savedIn:"{amount} adet giriş {name} adına kaydedildi.", savedOut:"{amount} adet çıkış {name} adına kaydedildi.", insufficient:"Yeterli stok yok. Mevcut stok: {stock}",
     barcodeRequired:"Barkodu okut veya numarayı yaz.", barcodeNotFound:"Bu barkodla kayıtlı ürün bulunamadı.", cameraUnsupported:"Bu cihaz kamera ile barkod taramayı desteklemiyor. Barkod numarasını yazabilirsin.", cameraDenied:"Kamera açılamadı. Kamera iznini kontrol et veya barkod numarasını elle gir.",
-    locationSelectTitle:"Koli / Raf Seç", locationSelectHint:"Bu barkod birden fazla konumda kayıtlı. İşlem yapacağın koli veya rafı seç.", locationCount:"{count} konum", selectLocationFirst:"Önce işlem yapılacak koli / rafı seç.",
+    locationSelectTitle:"Koli / Raf Seç", locationSelectHint:"Bu barkod birden fazla konumda kayıtlı. İşlem yapacağın koli veya rafı seç.", locationCount:"{count} konum", selectLocationFirst:"Önce işlem yapılacak koli / rafı seç.", barcodeTotalStock:"Barkod Toplamı", selectedLocationStock:"Seçili Konum",
     themeSaved:"Tema kaydedildi.", languageSaved:"Dil kaydedildi."
   },
   ar:{
@@ -66,13 +66,14 @@ const I18N = {
     enterName:"أدخل اسم الموظف بحرفين على الأقل.", noPermission:"ليس لديك صلاحية لفتح هذا القسم.", invalidAmount:"أدخل كمية صحيحة تساوي 1 أو أكثر.",
     savedIn:"تم تسجيل إدخال {amount} قطعة باسم {name}.", savedOut:"تم تسجيل إخراج {amount} قطعة باسم {name}.", insufficient:"الكمية غير كافية. المخزون الحالي: {stock}",
     barcodeRequired:"امسح الباركود أو اكتب رقمه.", barcodeNotFound:"لا يوجد منتج مسجل بهذا الباركود.", cameraUnsupported:"هذا الجهاز لا يدعم مسح الباركود بالكاميرا. يمكنك كتابة رقم الباركود.", cameraDenied:"تعذر فتح الكاميرا. تحقق من الإذن أو اكتب رقم الباركود يدوياً.",
-    locationSelectTitle:"اختر الصندوق / الرف", locationSelectHint:"هذا الباركود موجود في أكثر من موقع. اختر الصندوق أو الرف الذي ستجري عليه العملية.", locationCount:"{count} مواقع", selectLocationFirst:"اختر الصندوق / الرف أولاً.",
+    locationSelectTitle:"اختر الصندوق / الرف", locationSelectHint:"هذا الباركود موجود في أكثر من موقع. اختر الصندوق أو الرف الذي ستجري عليه العملية.", locationCount:"{count} مواقع", selectLocationFirst:"اختر الصندوق / الرف أولاً.", barcodeTotalStock:"إجمالي الباركود", selectedLocationStock:"الموقع المحدد",
     themeSaved:"تم حفظ اللون.", languageSaved:"تم حفظ اللغة."
   }
 };
 
 let supabaseClient = null;
 let allItems = [];
+let barcodeStockSummaryMap = new Map();
 let selectedImageFile = null;
 let selectedPreviewUrl = null;
 let selectedEditImageFile = null;
@@ -335,6 +336,44 @@ function itemTotal(item){
   return Number(item.quantity || 0);
 }
 
+function rebuildBarcodeStockSummaryMap(){
+  barcodeStockSummaryMap = new Map();
+  allItems.forEach(item => {
+    const code = cleanBarcode(item.barcode);
+    if(!code) return;
+    const current = barcodeStockSummaryMap.get(code) || { total:0, socket:0, noSocket:0, locations:0 };
+    current.total += itemTotal(item);
+    current.socket += Number(item.socket_quantity || 0);
+    current.noSocket += Number(item.no_socket_quantity || 0);
+    current.locations += 1;
+    barcodeStockSummaryMap.set(code, current);
+  });
+}
+
+function barcodeStockSummary(itemOrCode){
+  const code = cleanBarcode(typeof itemOrCode === "string" ? itemOrCode : itemOrCode?.barcode);
+  if(!code) return null;
+  return barcodeStockSummaryMap.get(code) || null;
+}
+
+function barcodeTotalBadgeHtml(item){
+  const summary = barcodeStockSummary(item);
+  if(!summary || summary.locations <= 1) return "";
+  return `<span class="badge barcodeTotalBadge">${t("barcodeTotalStock")}: ${summary.total}</span>`;
+}
+
+function barcodeAggregateStockHtml(itemOrCode){
+  const summary = barcodeStockSummary(itemOrCode);
+  if(!summary) return "";
+  const code = cleanBarcode(typeof itemOrCode === "string" ? itemOrCode : itemOrCode?.barcode);
+  const groupItems = allItems.filter(item => cleanBarcode(item.barcode) === code);
+  const isFrameGroup = groupItems.length > 0 && groupItems.every(item => item.product_type === "cerceve");
+  if(isFrameGroup){
+    return `<span class="badge">${t("barcodeTotalStock")}: ${summary.total}</span><span class="badge">${t("withSocket")}: ${summary.socket}</span><span class="badge">${t("withoutSocket")}: ${summary.noSocket}</span><span class="badge">${t("locationCount", {count:summary.locations})}</span>`;
+  }
+  return `<span class="badge">${t("barcodeTotalStock")}: ${summary.total}</span><span class="badge">${t("locationCount", {count:summary.locations})}</span>`;
+}
+
 function itemExtra(item){
   if(item.product_type === "cerceve"){
     return [item.vehicle_brand, item.vehicle_model, item.vehicle_year, item.screen_inch ? `${item.screen_inch}\"` : ""]
@@ -439,6 +478,7 @@ function itemHtml(item){
         <span class="badge">${t("box")}: ${escapeHtml(item.box_no || "-")}</span>
         <span class="badge">${t("shelf")}: ${escapeHtml(item.shelf_location || "-")}</span>
         ${stockBadges(item)}
+        ${barcodeTotalBadgeHtml(item)}
       </div>
       ${item.note ? `<p style="margin-top:8px">${escapeHtml(item.note)}</p>` : ""}
       <div class="stockActions">
@@ -465,6 +505,7 @@ function operationItemHtml(item){
         <span class="badge">${t("box")}: ${escapeHtml(item.box_no || "-")}</span>
         <span class="badge">${t("shelf")}: ${escapeHtml(item.shelf_location || "-")}</span>
         ${stockBadges(item)}
+        ${barcodeTotalBadgeHtml(item)}
       </div>
       <div class="stockActions">
         <button type="button" class="stockIn" data-action="stock-in" data-id="${id}">${t("stockIn")}</button>
@@ -505,6 +546,7 @@ async function loadAll(){
     return;
   }
 
+  rebuildBarcodeStockSummaryMap();
   renderList(allItems);
   renderOperationList();
   renderStats();
@@ -1484,7 +1526,8 @@ function selectBarcodeLocation(id){
   $("barcodeActionItemId").value = item.id;
   $("barcodeActionProductName").textContent = item.product_name || "Ürün";
   $("barcodeActionMeta").textContent = `Barkod: ${item.barcode || "-"} • ${barcodeLocationLabel(item)}`;
-  $("barcodeActionStock").innerHTML = operationStockHtml(item);
+  const summary = barcodeStockSummary(item);
+  $("barcodeActionStock").innerHTML = `${operationStockHtml(item)}${summary?.locations > 1 ? `<span class="badge barcodeTotalBadge">${t("barcodeTotalStock")}: ${summary.total}</span>` : ""}`;
   $("barcodeActionFrameTypeWrap").classList.toggle("hidden", item.product_type !== "cerceve");
   $("barcodeActionFrameType").value = "socket_quantity";
   $("barcodeActionAmount").value = 1;
@@ -1543,7 +1586,7 @@ function openBarcodeActionModalForMatches(matches, code){
   if(multiple){
     $("barcodeActionProductName").textContent = `${matches[0].product_name || "Ürün"} • ${t("locationCount", {count:matches.length})}`;
     $("barcodeActionMeta").textContent = `Barkod: ${code}`;
-    $("barcodeActionStock").innerHTML = "";
+    $("barcodeActionStock").innerHTML = barcodeAggregateStockHtml(code);
     $("barcodeActionFrameTypeWrap").classList.add("hidden");
     renderBarcodeLocations(matches);
     setBarcodeActionEnabled(false);

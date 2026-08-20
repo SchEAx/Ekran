@@ -152,3 +152,4 @@ textarea{min-height:72px;resize:vertical}
 .barcodeLocationProduct{grid-column:1;color:var(--muted);font-size:13px}
 .barcodeLocationStock{grid-column:2;grid-row:1 / span 2;align-self:center;font-weight:700;font-size:13px;color:var(--label)}
 @media(max-width:560px){.barcodeLocationOption{grid-template-columns:1fr}.barcodeLocationStock{grid-column:1;grid-row:auto}}
+.barcodeTotalBadge{background:color-mix(in srgb,var(--accent) 18%,var(--soft));border-color:color-mix(in srgb,var(--accent) 60%,var(--line));color:var(--text);font-weight:800}
