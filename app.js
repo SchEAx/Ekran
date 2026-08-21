@@ -1,4 +1,4 @@
-const APP_VERSION = "2.11.0";
+const APP_VERSION = "2.12.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -1482,11 +1482,25 @@ function openEditModal(id){
   $("editNote").value = item.note || "";
 
   const isFrame = item.product_type === "cerceve";
+  const isMedia = item.product_type === "multimedya";
   $("editFrameStock").classList.toggle("hidden", !isFrame);
   $("editGeneralStock").classList.toggle("hidden", isFrame);
+  $("editFrameDetails").classList.toggle("hidden", !isFrame);
+  $("editMediaDetails").classList.toggle("hidden", !isMedia);
   $("editSocketQuantity").value = Number(item.socket_quantity || 0);
   $("editNoSocketQuantity").value = Number(item.no_socket_quantity || 0);
   $("editQuantity").value = Number(item.quantity || 0);
+
+  // Ürün ekleme ekranındaki alt detayların tamamı düzenleme ekranında da değiştirilebilir.
+  $("editVehicleBrand").value = item.vehicle_brand || "";
+  $("editVehicleModel").value = item.vehicle_model || "";
+  $("editVehicleYear").value = item.vehicle_year || "";
+  $("editScreenInchFrame").value = isFrame ? (item.screen_inch || "") : "";
+  $("editSocketIncluded").value = item.socket_included === "yok" ? "yok" : "var";
+  $("editMediaBrand").value = item.media_brand || "";
+  $("editRam").value = item.ram || "";
+  $("editStorage").value = item.storage || "";
+  $("editScreenInchMedia").value = isMedia ? (item.screen_inch || "") : "";
   syncAdminStockUi();
 
   if(item.image_url){
@@ -1535,6 +1549,20 @@ async function saveEdit(){
     shelf_location:$("editShelfLocation").value.trim(),
     note:$("editNote").value.trim()
   };
+
+  // Ürün tipine özel alt bilgileri de Supabase'e kaydet.
+  if(item.product_type === "cerceve"){
+    updates.vehicle_brand = $("editVehicleBrand").value.trim() || null;
+    updates.vehicle_model = $("editVehicleModel").value.trim() || null;
+    updates.vehicle_year = $("editVehicleYear").value.trim() || null;
+    updates.screen_inch = $("editScreenInchFrame").value.trim() || null;
+    updates.socket_included = $("editSocketIncluded").value || null;
+  }else if(item.product_type === "multimedya"){
+    updates.media_brand = $("editMediaBrand").value.trim() || null;
+    updates.ram = $("editRam").value.trim() || null;
+    updates.storage = $("editStorage").value.trim() || null;
+    updates.screen_inch = $("editScreenInchMedia").value.trim() || null;
+  }
 
   if(!updates.product_name || !updates.box_no){
     toast("Ürün adı ve koli no boş bırakılamaz.");

@@ -329,6 +329,33 @@
       <div id="editFrameStock" class="subcard hidden"><div class="grid twoCols"><label>Soketli Stok<input id="editSocketQuantity" type="number" min="0" /></label><label>Soketsiz Stok<input id="editNoSocketQuantity" type="number" min="0" /></label></div></div>
       <div id="editGeneralStock" class="subcard hidden"><label>Toplam Stok<input id="editQuantity" type="number" min="0" /></label></div>
       <p id="editStockAdminNote" class="muted singleUnitHint hidden">🔒 Stok miktarını doğrudan düzenleme yalnızca Sabit Admin SchEAx hesabında açıktır.</p>
+
+      <div id="editFrameDetails" class="subcard hidden">
+        <h3>Çerçeve Bilgileri</h3>
+        <div class="grid">
+          <label>Araç Markası<input id="editVehicleBrand" placeholder="Ford" /></label>
+          <label>Araç Modeli<input id="editVehicleModel" placeholder="Fiesta" /></label>
+          <label>Model Yılı<input id="editVehicleYear" placeholder="2009-2017" /></label>
+          <label>Ekran İnç<input id="editScreenInchFrame" placeholder="9" /></label>
+          <label>Soket
+            <select id="editSocketIncluded">
+              <option value="var">Var</option>
+              <option value="yok">Yok</option>
+            </select>
+          </label>
+        </div>
+      </div>
+
+      <div id="editMediaDetails" class="subcard hidden">
+        <h3>Multimedya Bilgileri</h3>
+        <div class="grid">
+          <label>Marka<input id="editMediaBrand" placeholder="Navimex / For-X / Cyclone" /></label>
+          <label>RAM<input id="editRam" placeholder="4 GB" /></label>
+          <label>Hafıza<input id="editStorage" placeholder="64 GB" /></label>
+          <label>İnç<input id="editScreenInchMedia" placeholder="9" /></label>
+        </div>
+      </div>
+
       <div class="imagePick editImagePick">
         <span>Ürün Resmi</span>
         <div class="imageActions">
