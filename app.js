@@ -1,4 +1,4 @@
-const APP_VERSION = "2.10.0";
+const APP_VERSION = "2.11.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -380,9 +380,17 @@ function itemExtra(item){
       .filter(Boolean)
       .join(" ");
   }
-  return [item.media_brand, item.ram ? `RAM: ${item.ram}` : "", item.storage ? `Hafıza: ${item.storage}` : "", item.screen_inch ? `${item.screen_inch}\"` : ""]
-    .filter(Boolean)
-    .join(" • ");
+  if(item.product_type === "multimedya"){
+    return [item.media_brand, item.ram ? `RAM: ${item.ram}` : "", item.storage ? `Hafıza: ${item.storage}` : "", item.screen_inch ? `${item.screen_inch}\"` : ""]
+      .filter(Boolean)
+      .join(" • ");
+  }
+  return [
+    item.vehicle_brand, item.vehicle_model, item.vehicle_year,
+    item.media_brand, item.ram ? `RAM: ${item.ram}` : "",
+    item.storage ? `Hafıza: ${item.storage}` : "",
+    item.screen_inch ? `${item.screen_inch}\"` : ""
+  ].filter(Boolean).join(" • ");
 }
 
 function itemSearchText(item){
@@ -462,7 +470,7 @@ function stockBadges(item){
 function itemHtml(item){
   const id = escapeHtml(item.id);
   const name = escapeHtml(item.product_name || "İsimsiz Ürün");
-  const typeLabel = item.product_type === "cerceve" ? t("frame") : t("multimedia");
+  const typeLabel = productTypeDisplayLabel(item.product_type);
   const image = item.image_url ? `<img class="productImg" src="${escapeHtml(item.image_url)}" alt="${name}" loading="lazy" tabindex="0" role="button" data-action="view-image" data-image-url="${escapeHtml(item.image_url)}" />` : "";
 
   return `
@@ -514,6 +522,33 @@ function operationItemHtml(item){
     </div>`;
 }
 
+function syncDynamicProductTypes(){
+  const customTypes = [...new Set(
+    allItems
+      .map(item => String(item.product_type || "").trim())
+      .filter(type => type && type !== "cerceve" && type !== "multimedya")
+  )].sort((a, b) => productTypeDisplayLabel(a).localeCompare(productTypeDisplayLabel(b), "tr", {sensitivity:"base"}));
+
+  const syncSelect = (select, includeAll = false) => {
+    if(!select) return;
+    const current = select.value;
+    select.querySelectorAll('option[data-dynamic-product-type="true"]').forEach(option => option.remove());
+    for(const type of customTypes){
+      const option = document.createElement("option");
+      option.value = type;
+      option.textContent = productTypeDisplayLabel(type);
+      option.dataset.dynamicProductType = "true";
+      select.appendChild(option);
+    }
+    if([...select.options].some(option => option.value === current)) select.value = current;
+    else if(includeAll) select.value = "tum";
+  };
+
+  // Excel'den oluşturulan yeni ürün tipleri hem filtrede hem de Ürün Ekle ekranında tekrar seçilebilir.
+  syncSelect($("productType"));
+  syncSelect($("operationTypeFilter"), true);
+}
+
 async function fetchAllItems(){
   if(!supabaseClient) return [];
   const pageSize = 1000;
@@ -547,6 +582,7 @@ async function loadAll(){
   }
 
   rebuildBarcodeStockSummaryMap();
+  syncDynamicProductTypes();
   renderList(allItems);
   renderOperationList();
   renderStats();
@@ -613,8 +649,20 @@ function excelCellText(value){
   return String(value);
 }
 
+function productTypeDisplayLabel(type){
+  const value = String(type || "").trim();
+  if(value === "cerceve") return t("frame");
+  if(value === "multimedya") return t("multimedia");
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .replace(/(^|\s)([^\s])/g, (match, prefix, char) => prefix + char.toLocaleUpperCase("tr-TR"));
+}
+
 function productTypeExcelLabel(type){
-  return type === "cerceve" ? "Çerçeve" : "Multimedya";
+  if(type === "cerceve") return "Çerçeve";
+  if(type === "multimedya") return "Multimedya";
+  return productTypeDisplayLabel(type);
 }
 
 function normalizeExcelHeader(value){
@@ -624,10 +672,13 @@ function normalizeExcelHeader(value){
 }
 
 function normalizeExcelProductType(value){
-  const text = normalize(String(value || "").trim());
+  const raw = String(value || "").trim().replace(/\s+/g, " ");
+  const text = normalize(raw);
   if(["çerçeve", "cerceve", "frame"].includes(text)) return "cerceve";
   if(["multimedya", "multimedia", "ekran", "media"].includes(text)) return "multimedya";
-  return "";
+  // Çerçeve / Multimedya dışındaki yeni tipleri de otomatik kabul et.
+  // Örn: Hayalet Ekran -> "hayalet ekran" olarak saklanır ve sonraki listelerde seçenek olur.
+  return text;
 }
 
 function normalizeExcelSocketIncluded(value){
@@ -718,7 +769,8 @@ async function exportStockExcel(){
       ["3", "Aynı ürün farklı koli/raflarda ise aynı barkodu birden fazla satırda kullanabilirsin. Barkod okutunca konum seçilir."],
       ["4", "Farklı ürünlere yanlışlıkla aynı barkodu vermemeye dikkat et; program aynı barkodun tüm konumlarını birlikte gösterecektir."],
       ["5", "Mevcut stok miktarlarını Excel'de değiştirirsen farklar stok hareketi olarak kaydedilir."],
-      ["6", "Yeni ürün eklemek istersen ID'yi boş bırak; Ürün Tipi, Ürün Adı ve Koli No alanlarını doldur."]
+      ["6", "Yeni ürün eklemek istersen ID'yi boş bırak; Ürün Tipi, Ürün Adı ve Koli No alanlarını doldur."],
+      ["7", "Ürün Tipi serbesttir. Çerçeve ve Multimedya dışında Hayalet Ekran, Kamera vb. yeni bir tip yazarsan otomatik oluşturulur."]
     ];
     const infoSheet = XLSX.utils.aoa_to_sheet(infoRows);
     infoSheet["!cols"] = [{wch:10},{wch:100}];
@@ -878,7 +930,7 @@ function buildImportedItem(row, rowNumber, headerMap, existingItem){
   const importedType = typeCell === undefined ? (existingItem?.product_type || "") : normalizeExcelProductType(typeCell);
   const productType = importedType || existingItem?.product_type || "";
 
-  if(!productType) throw new Error(`${rowNumber}. satırda Ürün Tipi geçersiz. "Çerçeve" veya "Multimedya" yaz.`);
+  if(!productType) throw new Error(`${rowNumber}. satırda Ürün Tipi boş olamaz.`);
   if(isExisting && productType !== existingItem.product_type){
     throw new Error(`${rowNumber}. satırda mevcut ürünün Ürün Tipi Excel'den değiştirilemez.`);
   }
@@ -950,13 +1002,14 @@ function buildImportedItem(row, rowNumber, headerMap, existingItem){
     barcode:base.barcode || null,
     box_no:base.box_no,
     shelf_location:base.shelf_location || "",
-    vehicle_brand:base.product_type === "cerceve" ? (base.vehicle_brand || null) : null,
-    vehicle_model:base.product_type === "cerceve" ? (base.vehicle_model || null) : null,
-    vehicle_year:base.product_type === "cerceve" ? (base.vehicle_year || null) : null,
-    socket_included:base.product_type === "cerceve" ? (base.socket_included || null) : null,
-    media_brand:base.product_type === "multimedya" ? (base.media_brand || null) : null,
-    ram:base.product_type === "multimedya" ? (base.ram || null) : null,
-    storage:base.product_type === "multimedya" ? (base.storage || null) : null,
+    // Özel tiplerde ilgili özel alanlar korunur; serbest tiplerde Excel'de girilen bilgiler silinmez.
+    vehicle_brand:base.product_type === "multimedya" ? null : (base.vehicle_brand || null),
+    vehicle_model:base.product_type === "multimedya" ? null : (base.vehicle_model || null),
+    vehicle_year:base.product_type === "multimedya" ? null : (base.vehicle_year || null),
+    socket_included:base.product_type === "multimedya" ? null : (base.socket_included || null),
+    media_brand:base.product_type === "cerceve" ? null : (base.media_brand || null),
+    ram:base.product_type === "cerceve" ? null : (base.ram || null),
+    storage:base.product_type === "cerceve" ? null : (base.storage || null),
     screen_inch:base.screen_inch || null,
     image_url:base.image_url || null,
     note:base.note || ""
@@ -1292,7 +1345,7 @@ async function saveItem(){
   const type = $("productType").value;
   const initialSocketQuantity = type === "cerceve" ? Number($("socketQuantity").value || 0) : 0;
   const initialNoSocketQuantity = type === "cerceve" ? Number($("noSocketQuantity").value || 0) : 0;
-  const initialQuantity = type === "multimedya" ? Number($("quantity").value || 0) : 0;
+  const initialQuantity = type !== "cerceve" ? Number($("quantity").value || 0) : 0;
   if([initialSocketQuantity, initialNoSocketQuantity, initialQuantity].some(value => !Number.isInteger(value) || value < 0)){
     toast("Stok adetleri 0 veya daha büyük tam sayı olmalı.");
     return;
@@ -2399,9 +2452,11 @@ function setupEvents(){
   });
 
   const syncTypeFields = () => {
-    const isFrame = $("productType").value === "cerceve";
+    const type = $("productType").value;
+    const isFrame = type === "cerceve";
+    const isMedia = type === "multimedya";
     $("frameFields").classList.toggle("hidden", !isFrame);
-    $("mediaFields").classList.toggle("hidden", isFrame);
+    $("mediaFields").classList.toggle("hidden", !isMedia);
     $("frameStockWrap").classList.toggle("hidden", !isFrame);
     $("generalQuantityWrap").classList.toggle("hidden", isFrame);
   };

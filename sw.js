@@ -1,4 +1,4 @@
-const CACHE_NAME = "ekran-cerceve-v2.10.0";
+const CACHE_NAME = "ekran-cerceve-v2.11.0";
 const ASSETS = ["./","./index.html","./style.css","./app.js","./manifest.json"];
 
 self.addEventListener("install", event => {
