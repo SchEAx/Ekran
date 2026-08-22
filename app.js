@@ -1,4 +1,4 @@
-const APP_VERSION = "2.13.0";
+const APP_VERSION = "2.14.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -200,6 +200,21 @@ function updateProfileUi(){
 }
 
 
+async function loadCurrentBulkStockPermission(name = currentPersonnelName, pin = currentPersonnelPin){
+  if(!supabaseClient || !name || !pin || isFixedAdminName(name)) return isFixedAdminName(name);
+  try{
+    const { data, error } = await supabaseClient.rpc("get_depo_bulk_stock_permission", {
+      p_personnel_name:name,
+      p_personnel_pin:pin
+    });
+    if(error) throw new Error(error.message);
+    return data === true;
+  }catch(error){
+    console.warn("Toplu stok yetkisi okunamadı:", error.message);
+    return false;
+  }
+}
+
 function canUseBulkStock(){
   return adminUnlocked || currentAllowedTabs.has(BULK_STOCK_PERMISSION);
 }
@@ -307,8 +322,10 @@ async function syncPersonnelProfile(name = currentPersonnelName, pin = currentPe
     const allowed = Array.isArray(profile?.allowed_tabs) ? profile.allowed_tabs : DEFAULT_PERSONNEL_TABS;
     currentAllowedTabs = new Set([
       ...DEFAULT_PERSONNEL_TABS,
-      ...allowed.filter(tab => GRANTABLE_TABS.includes(tab) || tab === BULK_STOCK_PERMISSION)
+      ...allowed.filter(tab => GRANTABLE_TABS.includes(tab))
     ]);
+    const bulkAllowed = await loadCurrentBulkStockPermission(name, pin);
+    if(bulkAllowed) currentAllowedTabs.add(BULK_STOCK_PERMISSION);
     updateProfileUi();
     return true;
   }catch(error){
@@ -2185,7 +2202,22 @@ async function loadPersonnelAdmin(){
     });
     if(registrationError) throw new Error(registrationError.message);
     personnelRegistrationOpen = registrationOpen === true;
-    personnelAdminRows = data || [];
+
+    let bulkPermissionMap = new Map();
+    try{
+      const { data:bulkRows, error:bulkError } = await supabaseClient.rpc("get_depo_bulk_stock_permissions", {
+        p_admin_pin:adminPinSession
+      });
+      if(bulkError) throw new Error(bulkError.message);
+      bulkPermissionMap = new Map((bulkRows || []).map(row => [normalize(row.personnel_name).trim(), row.allowed === true]));
+    }catch(error){
+      console.warn("Toplu stok yetki listesi okunamadı:", error.message);
+    }
+
+    personnelAdminRows = (data || []).map(person => ({
+      ...person,
+      bulk_stock_allowed:isFixedAdminName(person.personnel_name) || bulkPermissionMap.get(normalize(person.personnel_name).trim()) === true
+    }));
     renderRegistrationStatus();
     renderPersonnelAdmin();
   }catch(error){
@@ -2244,7 +2276,7 @@ function renderPersonnelAdmin(){
               <span>${escapeHtml(t(TAB_LABELS[tab]))}</span>
             </label>`).join("")}
           <label class="permissionChoice bulkStockPermissionChoice">
-            <input type="checkbox" data-special-permission="${BULK_STOCK_PERMISSION}" ${(fixedAdmin || allowed.has(BULK_STOCK_PERMISSION)) ? "checked" : ""} ${fixedAdmin ? "disabled" : ""} />
+            <input type="checkbox" data-special-permission="${BULK_STOCK_PERMISSION}" ${(fixedAdmin || person.bulk_stock_allowed === true) ? "checked" : ""} ${fixedAdmin ? "disabled" : ""} />
             <span>📦 Toplu Stok Giriş / Çıkış</span>
           </label>
         </div>
@@ -2299,20 +2331,34 @@ async function savePersonnelTabs(personnelId){
   const target = personnelAdminRows.find(person => String(person.id) === String(personnelId));
   if(target && isFixedAdminName(target.personnel_name)){ toast(`${FIXED_ADMIN_NAME} sabit admin olduğundan tüm yetkiler zaten açıktır.`); return; }
   const card = document.querySelector(`[data-personnel-card="${personnelId}"]`);
-  if(!card) return;
+  if(!card || !target) return;
   const extras = [...card.querySelectorAll("[data-tab-permission]:checked")].map(input => input.dataset.tabPermission);
-  const specialPermissions = [...card.querySelectorAll("[data-special-permission]:checked")].map(input => input.dataset.specialPermission);
+  const bulkAllowed = Boolean(card.querySelector(`[data-special-permission="${BULK_STOCK_PERMISSION}"]`)?.checked);
   const button = card.querySelector('[data-action="save-personnel-tabs"]');
   setButtonLoading(button, true, "Kaydediliyor...");
   try{
     const { data, error } = await supabaseClient.rpc("set_depo_personnel_tabs", {
       p_admin_pin:adminPinSession,
       p_personnel_id:personnelId,
-      p_allowed_tabs:[...DEFAULT_PERSONNEL_TABS, ...extras, ...specialPermissions]
+      p_allowed_tabs:[...DEFAULT_PERSONNEL_TABS, ...extras]
     });
     if(error) throw new Error(error.message);
     if(data !== true) throw new Error("Yetki kaydı bulunamadı.");
-    toast("Personel yetkileri kaydedildi. Personel tekrar giriş yaptığında aktif olacak.");
+
+    const { data:bulkSaved, error:bulkError } = await supabaseClient.rpc("set_depo_bulk_stock_permission", {
+      p_admin_pin:adminPinSession,
+      p_personnel_name:target.personnel_name,
+      p_allowed:bulkAllowed
+    });
+    if(bulkError){
+      if(/Could not find the function|schema cache|does not exist/i.test(bulkError.message)){
+        throw new Error("Toplu stok yetki SQL'i henüz kurulmamış. SUPABASE_TOPLU_STOK_YETKISI_v2.14.0.sql dosyasını Supabase SQL Editor'de bir kez çalıştır.");
+      }
+      throw new Error(bulkError.message);
+    }
+    if(bulkSaved !== true) throw new Error("Toplu stok yetkisi kaydedilemedi.");
+
+    toast(`Personel yetkileri kaydedildi. Toplu stok: ${bulkAllowed ? "Açık" : "Kapalı"}. Personel tekrar giriş yaptığında aktif olacak.`);
     await loadPersonnelAdmin();
   }catch(error){
     toast("Personel yetkileri kaydedilemedi: " + error.message);
