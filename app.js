@@ -1,4 +1,4 @@
-const APP_VERSION = "2.12.0";
+const APP_VERSION = "2.13.0";
 const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
 
@@ -15,6 +15,7 @@ const FIXED_ADMIN_NAME = "SchEAx";
 const DEFAULT_PERSONNEL_TABS = ["islem", "ayar"];
 const ADMIN_ONLY_TABS = ["personel", "hareket"];
 const GRANTABLE_TABS = ["urun", "liste", "koli", "odeme"];
+const BULK_STOCK_PERMISSION = "toplu_stok";
 const TAB_LABELS = {
   urun:"tabProduct",
   islem:"tabOperation",
@@ -29,8 +30,8 @@ const I18N = {
     appTitle:"🖥️ Ekran & Çerçeve", appSubtitle:"Ekran & Çerçeve stok sistemi",
     adminLogin:"Admini Etkinleştir", adminLogout:"Sabit Admin", fixedAdmin:"Sabit Admin", personnel:"Personel", admin:"Admin",
     tabProduct:"Ürün Ekle", tabOperation:"Stok Giriş / Çıkış", tabStockList:"Stok Listesi", tabBoxes:"Koli Yönetimi", tabPayments:"Ödemeler", tabPersonnel:"Personeller", tabMovements:"Hareketler", tabSettings:"Ayarlar",
-    operationTitle:"Stok Giriş / Çıkış", operationHint:"Ürünü bul veya barkodu kamerayla okut. Personel işlemleri 1 adet olarak kaydedilir; Sabit Admin SchEAx toplu adet seçebilir.",
-    quickBarcode:"⚡ Barkodla Hızlı İşlem", quickBarcodeHint:"Telefon kamerasıyla okut; ürün penceresinden Giriş veya Çıkış seç. Personelde her işlem 1 adet, Sabit Admin SchEAx adet seçebilir.", barcodePlaceholder:"Barkodu okut veya numarayı yaz", findProduct:"Ürünü Bul", scanCamera:"📷 Kamera ile Tara",
+    operationTitle:"Stok Giriş / Çıkış", operationHint:"Ürünü bul veya barkodu kamerayla okut. Normal personel işlemleri 1 adettir; Toplu Stok Giriş / Çıkış yetkisi verilen personel adet seçebilir.",
+    quickBarcode:"⚡ Barkodla Hızlı İşlem", quickBarcodeHint:"Telefon kamerasıyla okut; ürün penceresinden Giriş veya Çıkış seç. Toplu stok yetkisi olmayan personelde işlem 1 adettir; yetkili personel adet seçebilir.", barcodePlaceholder:"Barkodu okut veya numarayı yaz", findProduct:"Ürünü Bul", scanCamera:"📷 Kamera ile Tara",
     searchProduct:"Ürün Ara", searchPlaceholder:"Ürün, araç, koli no veya raf ara...", productType:"Ürün Tipi", all:"Tümü", frame:"Çerçeve", multimedia:"Multimedya",
     personnelProfile:"Personel Profili", registeredPersonnel:"Bu cihazda kayıtlı personel:", changePersonnel:"Personeli Değiştir",
     languageTitle:"Dil / اللغة", languageHint:"Uygulama dilini seç. Seçim bu cihazda kayıtlı kalır.", themeColors:"Tema Renkleri", themeHint:"Seçtiğin tema bu cihazda kayıtlı kalır.", update:"Güncelle",
@@ -51,8 +52,8 @@ const I18N = {
     appTitle:"🖥️ Ekran & Çerçeve", appSubtitle:"نظام مخزون الشاشات والإطارات",
     adminLogin:"تفعيل المدير", adminLogout:"مدير ثابت", fixedAdmin:"مدير ثابت", personnel:"موظف", admin:"مدير",
     tabProduct:"إضافة منتج", tabOperation:"إدخال / إخراج المخزون", tabStockList:"قائمة المخزون", tabBoxes:"إدارة الصناديق", tabPayments:"المدفوعات", tabPersonnel:"الموظفون", tabMovements:"الحركات", tabSettings:"الإعدادات",
-    operationTitle:"إدخال / إخراج المخزون", operationHint:"ابحث عن المنتج أو امسح الباركود بالكاميرا. الموظف يسجل قطعة واحدة في كل عملية، والمدير يمكنه تحديد كمية متعددة.",
-    quickBarcode:"⚡ عملية سريعة بالباركود", quickBarcodeHint:"امسح بالكاميرا ثم اختر إدخال أو إخراج. الموظف يسجل قطعة واحدة في كل عملية، والمدير يمكنه تحديد الكمية.", barcodePlaceholder:"امسح الباركود أو اكتب الرقم", findProduct:"البحث عن المنتج", scanCamera:"📷 المسح بالكاميرا",
+    operationTitle:"إدخال / إخراج المخزون", operationHint:"ابحث عن المنتج أو امسح الباركود بالكاميرا. الموظف العادي يسجل قطعة واحدة؛ ومن لديه صلاحية الإدخال/الإخراج الجماعي يمكنه تحديد الكمية.",
+    quickBarcode:"⚡ عملية سريعة بالباركود", quickBarcodeHint:"امسح بالكاميرا ثم اختر إدخال أو إخراج. بدون صلاحية المخزون الجماعي تكون العملية قطعة واحدة؛ ومع الصلاحية يمكن تحديد الكمية.", barcodePlaceholder:"امسح الباركود أو اكتب الرقم", findProduct:"البحث عن المنتج", scanCamera:"📷 المسح بالكاميرا",
     searchProduct:"البحث عن منتج", searchPlaceholder:"ابحث بالمنتج أو السيارة أو الصندوق أو الرف...", productType:"نوع المنتج", all:"الكل", frame:"إطار", multimedia:"شاشة وسائط",
     personnelProfile:"ملف الموظف", registeredPersonnel:"الموظف المسجل على هذا الجهاز:", changePersonnel:"تغيير الموظف",
     languageTitle:"اللغة / Dil", languageHint:"اختر لغة التطبيق. سيبقى الاختيار محفوظاً على هذا الجهاز.", themeColors:"ألوان الواجهة", themeHint:"اللون الذي تختاره سيبقى محفوظاً على هذا الجهاز.", update:"تحديث",
@@ -199,13 +200,19 @@ function updateProfileUi(){
 }
 
 
+function canUseBulkStock(){
+  return adminUnlocked || currentAllowedTabs.has(BULK_STOCK_PERMISSION);
+}
+
 function syncAdminStockUi(){
-  $("operationAmountWrap")?.classList.toggle("hidden", !adminUnlocked);
-  $("operationSingleUnitHint")?.classList.toggle("hidden", adminUnlocked);
-  $("barcodeAdminAmountWrap")?.classList.toggle("hidden", !adminUnlocked);
-  $("barcodePersonnelAmountHint")?.classList.toggle("hidden", adminUnlocked);
+  const bulkStockAllowed = canUseBulkStock();
+  $("operationAmountWrap")?.classList.toggle("hidden", !bulkStockAllowed);
+  $("operationSingleUnitHint")?.classList.toggle("hidden", bulkStockAllowed);
+  $("barcodeAdminAmountWrap")?.classList.toggle("hidden", !bulkStockAllowed);
+  $("barcodePersonnelAmountHint")?.classList.toggle("hidden", bulkStockAllowed);
   if($("btnImportStockExcel")) $("btnImportStockExcel").classList.toggle("hidden", !adminUnlocked);
 
+  // Ürün düzenleme ekranından stoğu elle değiştirmek ve Excel toplu yüklemek hâlâ yalnızca Sabit Admin içindir.
   const stockInputs = [$("editSocketQuantity"), $("editNoSocketQuantity"), $("editQuantity")].filter(Boolean);
   stockInputs.forEach(input => { input.disabled = !adminUnlocked; });
   $("editStockAdminNote")?.classList.toggle("hidden", adminUnlocked);
@@ -298,7 +305,10 @@ async function syncPersonnelProfile(name = currentPersonnelName, pin = currentPe
     if(error) throw new Error(error.message);
     const profile = Array.isArray(data) ? data[0] : data;
     const allowed = Array.isArray(profile?.allowed_tabs) ? profile.allowed_tabs : DEFAULT_PERSONNEL_TABS;
-    currentAllowedTabs = new Set([...DEFAULT_PERSONNEL_TABS, ...allowed.filter(tab => GRANTABLE_TABS.includes(tab))]);
+    currentAllowedTabs = new Set([
+      ...DEFAULT_PERSONNEL_TABS,
+      ...allowed.filter(tab => GRANTABLE_TABS.includes(tab) || tab === BULK_STOCK_PERMISSION)
+    ]);
     updateProfileUi();
     return true;
   }catch(error){
@@ -1518,8 +1528,8 @@ function closeEditModal(){
 async function applyStockMovement(item, direction, amount, variant, note = ""){
   if(!currentPersonnelName || !currentPersonnelPin) throw new Error("Önce personel adı ve PIN ile giriş yap.");
   if(!Number.isInteger(Number(amount)) || Number(amount) <= 0) throw new Error("Stok adedi 1 veya daha büyük tam sayı olmalı.");
-  if(!adminUnlocked && Number(amount) !== 1){
-    throw new Error("Personel hesabında toplu stok işlemi kapalıdır. Her giriş/çıkış 1 adet olarak kaydedilir; toplu işlem için Admin girişi yap.");
+  if(!canUseBulkStock() && Number(amount) !== 1){
+    throw new Error("Bu personelde Toplu Stok Giriş / Çıkış yetkisi kapalıdır. Her işlem 1 adet olarak kaydedilir.");
   }
   const { data, error } = await supabaseClient.rpc("apply_depo_stock_movement", {
     p_item_id:String(item.id),
@@ -1663,7 +1673,7 @@ function openOperationModal(id, direction){
   confirmButton.textContent = isStockIn ? t("saveStockIn") : t("saveStockOut");
   confirmButton.className = isStockIn ? "stockIn" : "stockOut";
   $("operationModal").classList.remove("hidden");
-  setTimeout(() => (adminUnlocked ? $("operationAmount") : confirmButton).focus(), 50);
+  setTimeout(() => (canUseBulkStock() ? $("operationAmount") : confirmButton).focus(), 50);
 }
 
 function closeOperationModal(){
@@ -1678,7 +1688,7 @@ async function confirmStockOperation(){
 
   const item = findItem($("operationItemId").value);
   const direction = Number($("operationDirection").value);
-  const amount = adminUnlocked ? Number($("operationAmount").value) : 1;
+  const amount = canUseBulkStock() ? Number($("operationAmount").value) : 1;
   if(!item || ![1, -1].includes(direction)) return;
   if(!Number.isInteger(amount) || amount <= 0){
     toast(t("invalidAmount"));
@@ -1818,7 +1828,7 @@ function openBarcodeActionModalForMatches(matches, code){
   if(multiple){
     setTimeout(() => $("barcodeLocationList").querySelector("button")?.focus(), 50);
   }else{
-    setTimeout(() => (adminUnlocked ? $("barcodeActionAmount") : $("btnBarcodeStockOut")).focus(), 50);
+    setTimeout(() => (canUseBulkStock() ? $("barcodeActionAmount") : $("btnBarcodeStockOut")).focus(), 50);
   }
 }
 
@@ -1846,7 +1856,7 @@ async function confirmBarcodeStockOperation(direction){
     return;
   }
   if(![1, -1].includes(direction)) return;
-  const amount = adminUnlocked ? Number($("barcodeActionAmount").value) : 1;
+  const amount = canUseBulkStock() ? Number($("barcodeActionAmount").value) : 1;
   if(!Number.isInteger(amount) || amount <= 0){
     toast(t("invalidAmount"));
     return;
@@ -2233,10 +2243,14 @@ function renderPersonnelAdmin(){
               <input type="checkbox" data-tab-permission="${tab}" ${(fixedAdmin || allowed.has(tab)) ? "checked" : ""} ${fixedAdmin ? "disabled" : ""} />
               <span>${escapeHtml(t(TAB_LABELS[tab]))}</span>
             </label>`).join("")}
+          <label class="permissionChoice bulkStockPermissionChoice">
+            <input type="checkbox" data-special-permission="${BULK_STOCK_PERMISSION}" ${(fixedAdmin || allowed.has(BULK_STOCK_PERMISSION)) ? "checked" : ""} ${fixedAdmin ? "disabled" : ""} />
+            <span>📦 Toplu Stok Giriş / Çıkış</span>
+          </label>
         </div>
         ${fixedAdmin
           ? `<p class="muted">🔒 ${escapeHtml(FIXED_ADMIN_NAME)} sabit admindir; yetkileri, PIN’i ve aktifliği bu ekrandan değiştirilemez.</p>`
-          : `<button type="button" class="primary" data-action="save-personnel-tabs" data-id="${escapeHtml(person.id)}">Sekme İzinlerini Kaydet</button>
+          : `<button type="button" class="primary" data-action="save-personnel-tabs" data-id="${escapeHtml(person.id)}">Yetkileri Kaydet</button>
             <div class="personnelSecurityActions">
               <input type="password" inputmode="numeric" minlength="4" maxlength="12" data-personnel-new-pin placeholder="Yeni PIN (en az 4 hane)" />
               <button type="button" data-action="set-personnel-pin" data-id="${escapeHtml(person.id)}">PIN Belirle / Sıfırla</button>
@@ -2287,20 +2301,21 @@ async function savePersonnelTabs(personnelId){
   const card = document.querySelector(`[data-personnel-card="${personnelId}"]`);
   if(!card) return;
   const extras = [...card.querySelectorAll("[data-tab-permission]:checked")].map(input => input.dataset.tabPermission);
+  const specialPermissions = [...card.querySelectorAll("[data-special-permission]:checked")].map(input => input.dataset.specialPermission);
   const button = card.querySelector('[data-action="save-personnel-tabs"]');
   setButtonLoading(button, true, "Kaydediliyor...");
   try{
     const { data, error } = await supabaseClient.rpc("set_depo_personnel_tabs", {
       p_admin_pin:adminPinSession,
       p_personnel_id:personnelId,
-      p_allowed_tabs:[...DEFAULT_PERSONNEL_TABS, ...extras]
+      p_allowed_tabs:[...DEFAULT_PERSONNEL_TABS, ...extras, ...specialPermissions]
     });
     if(error) throw new Error(error.message);
     if(data !== true) throw new Error("Yetki kaydı bulunamadı.");
-    toast("Sekme izinleri kaydedildi. Personel uygulamayı yeniden açtığında aktif olacak.");
+    toast("Personel yetkileri kaydedildi. Personel tekrar giriş yaptığında aktif olacak.");
     await loadPersonnelAdmin();
   }catch(error){
-    toast("Sekme izinleri kaydedilemedi: " + error.message);
+    toast("Personel yetkileri kaydedilemedi: " + error.message);
   }finally{
     setButtonLoading(button, false);
   }

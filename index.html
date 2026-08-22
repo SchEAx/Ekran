@@ -385,8 +385,8 @@
           <option value="no_socket_quantity" data-i18n="withoutSocket">Soketsiz</option>
         </select>
       </label>
-      <label id="operationAmountWrap"><span data-i18n="quantity">Adet</span><input id="operationAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
-      <p id="operationSingleUnitHint" class="muted singleUnitHint hidden">🔒 Personel modunda her giriş / çıkış işlemi otomatik olarak <b>1 adet</b> kaydedilir.</p>
+      <label id="operationAmountWrap" class="hidden"><span data-i18n="quantity">Adet</span><input id="operationAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
+      <p id="operationSingleUnitHint" class="muted singleUnitHint hidden">🔒 Toplu stok yetkisi olmayan personelde her giriş / çıkış işlemi otomatik olarak <b>1 adet</b> kaydedilir.</p>
       <label><span data-i18n="operationNote">İşlem Notu (isteğe bağlı)</span><input id="operationNote" data-i18n-placeholder="operationNotePlaceholder" placeholder="Örn: Montaj için alındı" /></label>
       <div class="actions"><button type="button" id="btnConfirmOperation" class="primary" data-i18n="saveOperation">İşlemi Kaydet</button><button type="button" id="btnCancelOperation" data-i18n="cancel">Vazgeç</button></div>
     </div>
@@ -428,8 +428,8 @@
           <option value="no_socket_quantity" data-i18n="withoutSocket">Soketsiz</option>
         </select>
       </label>
-      <label id="barcodeAdminAmountWrap" class="hidden"><span>Adet (Admin)</span><input id="barcodeActionAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
-      <p id="barcodePersonnelAmountHint" class="muted singleUnitHint">🔒 Personel modunda adet seçimi yoktur; işlem <b>1 adet</b> olarak kaydedilir.</p>
+      <label id="barcodeAdminAmountWrap" class="hidden"><span>Adet</span><input id="barcodeActionAmount" type="number" min="1" inputmode="numeric" value="1" /></label>
+      <p id="barcodePersonnelAmountHint" class="muted singleUnitHint">🔒 Toplu stok yetkisi olmayan personelde adet seçimi yoktur; işlem <b>1 adet</b> olarak kaydedilir.</p>
       <div class="barcodeDirectionActions">
         <button type="button" id="btnBarcodeStockIn" class="stockIn">➕ Giriş</button>
         <button type="button" id="btnBarcodeStockOut" class="stockOut">➖ Çıkış</button>
