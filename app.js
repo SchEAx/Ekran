@@ -1,6 +1,6 @@
-const APP_VERSION = "2.14.0";
-const SUPABASE_URL = "https://djagwlauszawsodgccag.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRqYWd3bGF1c3phd3NvZGdjY2FnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM1MTU5OTcsImV4cCI6MjA5OTA5MTk5N30.TR5A6svINoUesQ6rwnRi9MbAtdj2RSk2GbOWUV2WErA";
+const APP_VERSION = "2.15.0";
+const API_BASE_URL = "https://api.scheax.com.tr/ekran1/api";
+const MEDIA_BASE_URL = "https://api.scheax.com.tr/ekran1/media";
 
 const THEMES = {
   midnight: "#111827",
@@ -72,7 +72,7 @@ const I18N = {
   }
 };
 
-let supabaseClient = null;
+let apiClient = null;
 let allItems = [];
 let barcodeStockSummaryMap = new Map();
 let selectedImageFile = null;
@@ -201,9 +201,9 @@ function updateProfileUi(){
 
 
 async function loadCurrentBulkStockPermission(name = currentPersonnelName, pin = currentPersonnelPin){
-  if(!supabaseClient || !name || !pin || isFixedAdminName(name)) return isFixedAdminName(name);
+  if(!apiClient || !name || !pin || isFixedAdminName(name)) return isFixedAdminName(name);
   try{
-    const { data, error } = await supabaseClient.rpc("get_depo_bulk_stock_permission", {
+    const { data, error } = await apiClient.rpc("get_depo_bulk_stock_permission", {
       p_personnel_name:name,
       p_personnel_pin:pin
     });
@@ -306,13 +306,13 @@ function initPersonnelProfile(){
 
 async function syncPersonnelProfile(name = currentPersonnelName, pin = currentPersonnelPin){
   currentAllowedTabs = new Set(DEFAULT_PERSONNEL_TABS);
-  if(!supabaseClient || !name || !pin || !currentDeviceId){
+  if(!apiClient || !name || !pin || !currentDeviceId){
     updateProfileUi();
     return false;
   }
 
   try{
-    const { data, error } = await supabaseClient.rpc("login_depo_personnel", {
+    const { data, error } = await apiClient.rpc("login_depo_personnel", {
       p_personnel_name:name,
       p_personnel_pin:pin,
       p_device_id:currentDeviceId
@@ -340,7 +340,7 @@ async function ensurePersonnelActive(){
     openPersonnelModal(false);
     throw new Error("Personel adı ve PIN ile giriş yapmalısın.");
   }
-  const { data, error } = await supabaseClient.rpc("verify_depo_personnel", {
+  const { data, error } = await apiClient.rpc("verify_depo_personnel", {
     p_personnel_name:currentPersonnelName,
     p_personnel_pin:currentPersonnelPin
   });
@@ -472,12 +472,23 @@ function applyTheme(themeName, persist = true){
   });
 }
 
-async function initSupabase(){
-  if(SUPABASE_URL && SUPABASE_ANON_KEY && window.supabase){
-    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    if(currentPersonnelName) await syncPersonnelProfile();
-    await loadAll();
+async function initApi(){
+  if(!window.createEkranApiClient){
+    toast("API istemcisi yüklenemedi. Sayfayı güncelle.");
+    return;
   }
+  apiClient = window.createEkranApiClient({
+    apiBase:API_BASE_URL,
+    mediaBase:MEDIA_BASE_URL,
+    getCredentials:() => ({
+      personnelName:currentPersonnelName,
+      personnelPin:currentPersonnelPin,
+      deviceId:currentDeviceId,
+      adminPin:adminPinSession
+    })
+  });
+  if(currentPersonnelName && currentPersonnelPin) await syncPersonnelProfile();
+  await loadAll();
 }
 
 function clearForm(){
@@ -577,13 +588,13 @@ function syncDynamicProductTypes(){
 }
 
 async function fetchAllItems(){
-  if(!supabaseClient) return [];
+  if(!apiClient) return [];
   const pageSize = 1000;
   const rows = [];
   let from = 0;
 
   while(true){
-    const { data, error } = await supabaseClient
+    const { data, error } = await apiClient
       .from("depo_items")
       .select("*")
       .order("created_at", { ascending:false })
@@ -600,7 +611,7 @@ async function fetchAllItems(){
 }
 
 async function loadAll(){
-  if(!supabaseClient) return;
+  if(!apiClient) return;
   try{
     allItems = await fetchAllItems();
   }catch(error){
@@ -738,8 +749,8 @@ async function exportStockExcel(){
     toast("Excel modülü yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenile.");
     return;
   }
-  if(!supabaseClient){
-    toast("Supabase bağlantısı hazır değil.");
+  if(!apiClient){
+    toast("API bağlantısı hazır değil.");
     return;
   }
 
@@ -826,8 +837,8 @@ async function exportBarcodeTotalExcel(){
     toast("Excel modülü yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenile.");
     return;
   }
-  if(!supabaseClient){
-    toast("Supabase bağlantısı hazır değil.");
+  if(!apiClient){
+    toast("API bağlantısı hazır değil.");
     return;
   }
 
@@ -1074,8 +1085,8 @@ async function importStockExcel(file){
     toast("Excel modülü yüklenemedi. İnternet bağlantısını kontrol edip sayfayı yenile.");
     return;
   }
-  if(!supabaseClient){
-    toast("Supabase bağlantısı hazır değil.");
+  if(!apiClient){
+    toast("API bağlantısı hazır değil.");
     return;
   }
   try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
@@ -1158,7 +1169,7 @@ async function importStockExcel(file){
         socket_quantity:Number(entry.existingItem.socket_quantity || 0),
         no_socket_quantity:Number(entry.existingItem.no_socket_quantity || 0)
       }));
-      const { error } = await supabaseClient.from("depo_items").upsert(payload, {onConflict:"id"});
+      const { error } = await apiClient.from("depo_items").upsert(payload, {onConflict:"id"});
       if(error) throw new Error("Toplu ürün güncellemesi başarısız: " + error.message);
       processed += batchEntries.length;
       setExcelStatus(`${processed.toLocaleString("tr-TR")} / ${importRows.length.toLocaleString("tr-TR")} satır işlendi...`);
@@ -1177,7 +1188,7 @@ async function importStockExcel(file){
         socket_quantity:0,
         no_socket_quantity:0
       };
-      const { data:createdItem, error } = await supabaseClient.from("depo_items").insert(insertRow).select("*").single();
+      const { data:createdItem, error } = await apiClient.from("depo_items").insert(insertRow).select("*").single();
       if(error) throw new Error(`${entry.rowNumber}. satır yeni ürün olarak eklenemedi: ${error.message}`);
       if(createdItem.product_type === "cerceve"){
         if(entry.desiredSocket > 0){ await applyStockMovement(createdItem, 1, entry.desiredSocket, "socket_quantity", "Excel ile yeni ürün ilk stok kaydı"); stockMovements++; }
@@ -1341,7 +1352,7 @@ async function uploadProductImage(file){
   const compressedFile = await compressImage(file);
   const extension = compressedFile.name.split(".").pop() || "webp";
   const path = `urunler/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
-  const { error:uploadError } = await supabaseClient.storage
+  const { error:uploadError } = await apiClient.storage
     .from("depo-resimler")
     .upload(path, compressedFile, {
       cacheControl:"3600",
@@ -1350,7 +1361,7 @@ async function uploadProductImage(file){
     });
 
   if(uploadError) throw new Error("Resim yüklenemedi: " + uploadError.message);
-  const { data } = supabaseClient.storage.from("depo-resimler").getPublicUrl(path);
+  const { data } = apiClient.storage.from("depo-resimler").getPublicUrl(path);
   return data.publicUrl;
 }
 
@@ -1359,8 +1370,8 @@ async function saveItem(){
     toast("Ürün ekleme yetkin bulunmuyor.");
     return;
   }
-  if(!supabaseClient){
-    toast("Önce Supabase ayarlarını gir knk.");
+  if(!apiClient){
+    toast("API bağlantısı hazır değil.");
     return;
   }
   if(!currentPersonnelName){
@@ -1411,7 +1422,7 @@ async function saveItem(){
   setButtonLoading(saveButton, true);
   try{
     row.image_url = await uploadProductImage(selectedImageFile);
-    const { data:createdItem, error } = await supabaseClient.from("depo_items").insert(row).select("*").single();
+    const { data:createdItem, error } = await apiClient.from("depo_items").insert(row).select("*").single();
     if(error) throw new Error("Kaydedilemedi: " + error.message);
     if(initialSocketQuantity > 0) await applyStockMovement(createdItem, 1, initialSocketQuantity, "socket_quantity", "Yeni ürün ilk stok kaydı");
     if(initialNoSocketQuantity > 0) await applyStockMovement(createdItem, 1, initialNoSocketQuantity, "no_socket_quantity", "Yeni ürün ilk stok kaydı");
@@ -1432,8 +1443,8 @@ async function savePayment(){
     toast("Ödemeler sekmesi için yetkin bulunmuyor.");
     return;
   }
-  if(!supabaseClient){
-    toast("Önce Supabase ayarlarını gir knk.");
+  if(!apiClient){
+    toast("API bağlantısı hazır değil.");
     return;
   }
   const row = {
@@ -1446,7 +1457,7 @@ async function savePayment(){
     toast("Firma/kişi ve tutar gir knk.");
     return;
   }
-  const { error } = await supabaseClient.from("depo_payments").insert(row);
+  const { error } = await apiClient.from("depo_payments").insert(row);
   if(error){
     toast("Ödeme kaydedilemedi: " + error.message);
     return;
@@ -1459,8 +1470,8 @@ async function savePayment(){
 }
 
 async function loadPayments(){
-  if(!supabaseClient || !canUseTab("odeme")) return;
-  const { data, error } = await supabaseClient.from("depo_payments").select("*").order("created_at", { ascending:false }).limit(30);
+  if(!apiClient || !canUseTab("odeme")) return;
+  const { data, error } = await apiClient.from("depo_payments").select("*").order("created_at", { ascending:false }).limit(30);
   if(error) return;
   $("paymentList").innerHTML = (data || []).map(payment => `
     <div class="item">
@@ -1548,7 +1559,7 @@ async function applyStockMovement(item, direction, amount, variant, note = ""){
   if(!canUseBulkStock() && Number(amount) !== 1){
     throw new Error("Bu personelde Toplu Stok Giriş / Çıkış yetkisi kapalıdır. Her işlem 1 adet olarak kaydedilir.");
   }
-  const { data, error } = await supabaseClient.rpc("apply_depo_stock_movement", {
+  const { data, error } = await apiClient.rpc("apply_depo_stock_movement", {
     p_item_id:String(item.id),
     p_direction:direction,
     p_amount:amount,
@@ -1577,7 +1588,7 @@ async function saveEdit(){
     note:$("editNote").value.trim()
   };
 
-  // Ürün tipine özel alt bilgileri de Supabase'e kaydet.
+  // Ürün tipine özel alt bilgileri de API'ye kaydet.
   if(item.product_type === "cerceve"){
     updates.vehicle_brand = $("editVehicleBrand").value.trim() || null;
     updates.vehicle_model = $("editVehicleModel").value.trim() || null;
@@ -1629,7 +1640,7 @@ async function saveEdit(){
       updates.image_url = null;
     }
 
-    const { error } = await supabaseClient.from("depo_items").update(updates).eq("id", item.id);
+    const { error } = await apiClient.from("depo_items").update(updates).eq("id", item.id);
     if(error) throw new Error("Düzenleme kaydedilemedi: " + error.message);
     for(const change of stockChanges){
       await applyStockMovement(item, change.direction, change.amount, change.variant, "Ürün düzenleme ekranından stok düzeltmesi");
@@ -1649,7 +1660,7 @@ async function deleteItem(){
   if(!canUseTab("urun")) return;
   const item = findItem($("editId").value);
   if(!item || !confirm(`"${item.product_name}" tamamen silinsin mi?`)) return;
-  const { error } = await supabaseClient.from("depo_items").delete().eq("id", item.id);
+  const { error } = await apiClient.from("depo_items").delete().eq("id", item.id);
   if(error){
     toast("Ürün silinemedi: " + error.message);
     return;
@@ -1698,8 +1709,8 @@ function closeOperationModal(){
 }
 
 async function confirmStockOperation(){
-  if(!supabaseClient){
-    toast("Supabase bağlantısı bulunamadı.");
+  if(!apiClient){
+    toast("API bağlantısı bulunamadı.");
     return;
   }
 
@@ -1861,8 +1872,8 @@ function closeBarcodeActionModal(){
 }
 
 async function confirmBarcodeStockOperation(direction){
-  if(!supabaseClient){
-    toast("Supabase bağlantısı bulunamadı.");
+  if(!apiClient){
+    toast("API bağlantısı bulunamadı.");
     return;
   }
   try{ await ensurePersonnelActive(); }catch(error){ toast(error.message); return; }
@@ -2069,10 +2080,10 @@ function setReportPeriod(mode){
 async function syncFixedAdminState(promptIfNeeded = false){
   adminUnlocked = false;
   adminPinSession = "";
-  if(!supabaseClient || !isFixedAdminPersonnel() || !currentPersonnelPin) return false;
+  if(!apiClient || !isFixedAdminPersonnel() || !currentPersonnelPin) return false;
 
   try{
-    const { data, error } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:currentPersonnelPin });
+    const { data, error } = await apiClient.rpc("verify_depo_admin", { p_admin_pin:currentPersonnelPin });
     if(error) throw new Error(error.message);
     if(data === true){
       adminUnlocked = true;
@@ -2114,8 +2125,8 @@ function closeAdminModal(){
 }
 
 async function adminLogin(){
-  if(!supabaseClient){
-    toast("Supabase bağlantısı bulunamadı.");
+  if(!apiClient){
+    toast("API bağlantısı bulunamadı.");
     return;
   }
   if(!isFixedAdminPersonnel() || !currentPersonnelPin){
@@ -2130,10 +2141,10 @@ async function adminLogin(){
   const button = $("btnAdminLogin");
   setButtonLoading(button, true, "Eşleştiriliyor...");
   try{
-    const { data, error } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:oldAdminPin });
+    const { data, error } = await apiClient.rpc("verify_depo_admin", { p_admin_pin:oldAdminPin });
     if(error){
       if(/crypt\(text, text\).*does not exist/i.test(error.message)){
-        throw new Error("Supabase şifre fonksiyonu eski. Güncel kurulum SQL’ini tekrar çalıştır.");
+        throw new Error("Veritabanı şifre fonksiyonu eski. Güncel kurulum SQL’ini tekrar çalıştır.");
       }
       throw new Error(error.message);
     }
@@ -2144,7 +2155,7 @@ async function adminLogin(){
 
     // Bir kereye mahsus mevcut admin PIN'ini SchEAx personel PIN'iyle eşitleriz.
     if(oldAdminPin !== currentPersonnelPin){
-      const { data:changed, error:changeError } = await supabaseClient.rpc("change_depo_admin_pin", {
+      const { data:changed, error:changeError } = await apiClient.rpc("change_depo_admin_pin", {
         p_current_pin:oldAdminPin,
         p_new_pin:currentPersonnelPin
       });
@@ -2152,7 +2163,7 @@ async function adminLogin(){
       if(changed !== true) throw new Error("Admin PIN eşleştirmesi tamamlanamadı.");
     }
 
-    const { data:verified, error:verifyError } = await supabaseClient.rpc("verify_depo_admin", { p_admin_pin:currentPersonnelPin });
+    const { data:verified, error:verifyError } = await apiClient.rpc("verify_depo_admin", { p_admin_pin:currentPersonnelPin });
     if(verifyError) throw new Error(verifyError.message);
     if(verified !== true) throw new Error("Sabit admin doğrulaması başarısız oldu.");
 
@@ -2193,11 +2204,11 @@ async function loadPersonnelAdmin(){
   const button = $("btnLoadPersonnel");
   setButtonLoading(button, true, "Yükleniyor...");
   try{
-    const { data, error } = await supabaseClient.rpc("get_depo_personnel_list", {
+    const { data, error } = await apiClient.rpc("get_depo_personnel_list", {
       p_admin_pin:adminPinSession
     });
     if(error) throw new Error(error.message);
-    const { data:registrationOpen, error:registrationError } = await supabaseClient.rpc("get_depo_registration_status", {
+    const { data:registrationOpen, error:registrationError } = await apiClient.rpc("get_depo_registration_status", {
       p_admin_pin:adminPinSession
     });
     if(registrationError) throw new Error(registrationError.message);
@@ -2205,7 +2216,7 @@ async function loadPersonnelAdmin(){
 
     let bulkPermissionMap = new Map();
     try{
-      const { data:bulkRows, error:bulkError } = await supabaseClient.rpc("get_depo_bulk_stock_permissions", {
+      const { data:bulkRows, error:bulkError } = await apiClient.rpc("get_depo_bulk_stock_permissions", {
         p_admin_pin:adminPinSession
       });
       if(bulkError) throw new Error(bulkError.message);
@@ -2221,7 +2232,7 @@ async function loadPersonnelAdmin(){
     renderRegistrationStatus();
     renderPersonnelAdmin();
   }catch(error){
-    $("personnelAdminList").innerHTML = `<p class="muted">Personel listesi alınamadı. Güncel SUPABASE_KURULUM.sql dosyasını çalıştır.</p>`;
+    $("personnelAdminList").innerHTML = `<p class="muted">Personel listesi alınamadı. Ekran1 API ve veritabanı bağlantısını kontrol et.</p>`;
     toast("Personel listesi alınamadı: " + error.message);
   }finally{
     setButtonLoading(button, false);
@@ -2241,7 +2252,7 @@ async function togglePersonnelRegistration(){
   const button = $("btnToggleRegistration");
   setButtonLoading(button, true, "Kaydediliyor...");
   try{
-    const { data, error } = await supabaseClient.rpc("set_depo_registration_status", {
+    const { data, error } = await apiClient.rpc("set_depo_registration_status", {
       p_admin_pin:adminPinSession,
       p_is_open:!personnelRegistrationOpen
     });
@@ -2300,7 +2311,7 @@ async function setPersonnelPin(personnelId){
   const newPin = card?.querySelector("[data-personnel-new-pin]")?.value.trim() || "";
   if(newPin.length < 4){ toast("Yeni personel PIN en az 4 haneli olmalı."); return; }
   try{
-    const { data, error } = await supabaseClient.rpc("set_depo_personnel_pin", {
+    const { data, error } = await apiClient.rpc("set_depo_personnel_pin", {
       p_admin_pin:adminPinSession, p_personnel_id:personnelId, p_new_pin:newPin
     });
     if(error) throw new Error(error.message);
@@ -2316,7 +2327,7 @@ async function togglePersonnelActive(personnelId, currentlyActive){
   const nextActive = !currentlyActive;
   if(!nextActive && !confirm("Bu personel pasife alınacak ve artık giriş/stok işlemi yapamayacak. Devam edilsin mi?")) return;
   try{
-    const { data, error } = await supabaseClient.rpc("set_depo_personnel_active", {
+    const { data, error } = await apiClient.rpc("set_depo_personnel_active", {
       p_admin_pin:adminPinSession, p_personnel_id:personnelId, p_is_active:nextActive
     });
     if(error) throw new Error(error.message);
@@ -2337,7 +2348,7 @@ async function savePersonnelTabs(personnelId){
   const button = card.querySelector('[data-action="save-personnel-tabs"]');
   setButtonLoading(button, true, "Kaydediliyor...");
   try{
-    const { data, error } = await supabaseClient.rpc("set_depo_personnel_tabs", {
+    const { data, error } = await apiClient.rpc("set_depo_personnel_tabs", {
       p_admin_pin:adminPinSession,
       p_personnel_id:personnelId,
       p_allowed_tabs:[...DEFAULT_PERSONNEL_TABS, ...extras]
@@ -2345,14 +2356,14 @@ async function savePersonnelTabs(personnelId){
     if(error) throw new Error(error.message);
     if(data !== true) throw new Error("Yetki kaydı bulunamadı.");
 
-    const { data:bulkSaved, error:bulkError } = await supabaseClient.rpc("set_depo_bulk_stock_permission", {
+    const { data:bulkSaved, error:bulkError } = await apiClient.rpc("set_depo_bulk_stock_permission", {
       p_admin_pin:adminPinSession,
       p_personnel_name:target.personnel_name,
       p_allowed:bulkAllowed
     });
     if(bulkError){
       if(/Could not find the function|schema cache|does not exist/i.test(bulkError.message)){
-        throw new Error("Toplu stok yetki SQL'i henüz kurulmamış. SUPABASE_TOPLU_STOK_YETKISI_v2.14.0.sql dosyasını Supabase SQL Editor'de bir kez çalıştır.");
+        throw new Error("Toplu stok yetki fonksiyonu bulunamadı. Ekran1 veritabanı kurulumunu kontrol et.");
       }
       throw new Error(bulkError.message);
     }
@@ -2460,7 +2471,7 @@ async function loadMovements(){
   const button = $("btnLoadMovements");
   setButtonLoading(button, true, "Rapor hazırlanıyor...");
   try{
-    const { data, error } = await supabaseClient.rpc("get_depo_stock_movements", {
+    const { data, error } = await apiClient.rpc("get_depo_stock_movements", {
       p_admin_pin:adminPinSession,
       p_from:fromDate.toISOString(),
       p_to:toDate.toISOString(),
@@ -2683,5 +2694,5 @@ initPersonnelProfile();
 setupEvents();
 syncAdminStockUi();
 setReportPeriod("today");
-initSupabase();
+initApi();
 checkUpdateButton();
