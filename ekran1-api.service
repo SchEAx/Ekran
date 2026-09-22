@@ -1,0 +1,23 @@
+[Unit]
+Description=Ekran1 Stock API
+After=network.target postgresql.service
+Requires=postgresql.service
+
+[Service]
+Type=simple
+User=garageadmin
+Group=garageadmin
+WorkingDirectory=/srv/garageistanbul/ekran1/api
+EnvironmentFile=/srv/garageistanbul/ekran1/api/.env
+ExecStart=/usr/bin/node /srv/garageistanbul/ekran1/api/server.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+ReadWritePaths=/srv/garageistanbul/ekran1/media
+
+[Install]
+WantedBy=multi-user.target
+

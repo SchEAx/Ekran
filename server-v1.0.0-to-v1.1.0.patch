@@ -1,0 +1,164 @@
+--- server.js (v1.0.0)
++++ server.js (v1.1.0)
+@@ -59,8 +59,9 @@
+     "X-Personnel-Name",
+     "X-Personnel-Pin",
+     "X-Device-Id",
+     "X-Admin-Pin",
++    "X-Ekran-Session",
+   ],
+   maxAge: 86_400,
+ }));
+ 
+@@ -93,9 +94,61 @@
+     return text;
+   }
+ }
+ 
++// Şifreli oturumun içinde PIN yalnızca sunucunun anahtarıyla çözülebilir.
++// PIN tarayıcının kalıcı depolamasına yazılmaz. PIN değişirse DB doğrulaması
++// oturumu anında reddeder; oturum 30 gün içinde yenilenmezse sona erer.
++const SESSION_SECRET = String(process.env.EKRAN_SESSION_SECRET || "");
++const SESSION_KEY = SESSION_SECRET.length >= 32 && !SESSION_SECRET.startsWith("BURAYA_")
++  ? crypto.createHash("sha256").update(SESSION_SECRET).digest()
++  : null;
++const SESSION_LIFETIME_MS = 30 * 24 * 60 * 60 * 1000;
++
++function requireSessionKey() {
++  if (!SESSION_KEY) throw httpError(503, "Kalıcı oturum henüz etkin değil.");
++}
++
++function issueSession(name, pin, deviceId) {
++  requireSessionKey();
++  const nonce = crypto.randomBytes(12);
++  const cipher = crypto.createCipheriv("aes-256-gcm", SESSION_KEY, nonce);
++  const payload = JSON.stringify({ name, pin, deviceId, exp: Date.now() + SESSION_LIFETIME_MS });
++  const encrypted = Buffer.concat([cipher.update(payload, "utf8"), cipher.final()]);
++  return ["v1", nonce.toString("base64url"), encrypted.toString("base64url"), cipher.getAuthTag().toString("base64url")].join(".");
++}
++
++function readSession(req) {
++  const token = String(req.get("X-Ekran-Session") || "");
++  if (!token) return null;
++  requireSessionKey();
++  if (token.length > 2048) throw httpError(401, "Oturum geçersiz.");
++  const parts = token.split(".");
++  if (parts.length !== 4 || parts[0] !== "v1") throw httpError(401, "Oturum geçersiz.");
++  try {
++    const nonce = Buffer.from(parts[1], "base64url");
++    const encrypted = Buffer.from(parts[2], "base64url");
++    const tag = Buffer.from(parts[3], "base64url");
++    if (nonce.length !== 12 || tag.length !== 16 || !encrypted.length) throw Error("format");
++    const decipher = crypto.createDecipheriv("aes-256-gcm", SESSION_KEY, nonce);
++    decipher.setAuthTag(tag);
++    const data = JSON.parse(Buffer.concat([decipher.update(encrypted), decipher.final()]).toString("utf8"));
++    if (!data.name || !data.pin || !data.deviceId || !Number.isSafeInteger(data.exp) || data.exp <= Date.now()) throw Error("expired");
++    if (data.deviceId !== decodeHeader(req.get("X-Device-Id"))) throw Error("device");
++    return data;
++  } catch (_error) {
++    throw httpError(401, "Oturum süresi doldu veya oturum geçersiz. Tekrar giriş yap.");
++  }
++}
++
+ function requestCredentials(req) {
++  const session = readSession(req);
++  if (session) return {
++    personnelName: session.name,
++    personnelPin: session.pin,
++    deviceId: session.deviceId,
++    adminPin: session.pin,
++  };
+   return {
+     personnelName: decodeHeader(req.get("X-Personnel-Name")),
+     personnelPin: String(req.get("X-Personnel-Pin") || "").trim(),
+     deviceId: decodeHeader(req.get("X-Device-Id")),
+@@ -336,8 +389,51 @@
+     database_time: result.rows[0].database_time,
+   });
+ }));
+ 
++async function sessionProfile(name, pin) {
++  const valid = await pool.query(
++    "SELECT public.verify_depo_personnel($1::text,$2::text) AS valid", [name, pin]
++  );
++  if (valid.rows[0]?.valid !== true) throw httpError(401, "Personel hesabı pasif veya PIN değişmiş. Tekrar giriş yap.");
++  const permission = await pool.query(
++    `SELECT allowed_tabs FROM public.depo_personnel
++      WHERE personnel_key = lower(btrim($1::text))
++      ORDER BY last_seen_at DESC LIMIT 1`, [name]
++  );
++  return { allowed_tabs: permission.rows[0]?.allowed_tabs || [] };
++}
++
++app.post("/api/session", rateLimit({
++  windowMs: 15 * 60 * 1000,
++  limit: 15,
++  standardHeaders: "draft-8",
++  legacyHeaders: false,
++}), asyncRoute(async (req, res) => {
++  requireSessionKey();
++  const name = String(req.body?.personnel_name || "").trim();
++  const pin = String(req.body?.personnel_pin || "").trim();
++  const deviceId = String(req.body?.device_id || "").trim();
++  if (name.length < 2 || name.length > 120 || pin.length < 4 || pin.length > 128 || !deviceId || deviceId.length > 200) {
++    throw httpError(400, "Personel, PIN ve cihaz kimliği geçersiz.");
++  }
++  const profile = await sessionProfile(name, pin);
++  res.set("Cache-Control", "no-store").json({ data: {
++    token: issueSession(name, pin, deviceId),
++    name, profile, is_admin: await verifyAdminPin(pin)
++  } });
++}));
++
++app.get("/api/session", asyncRoute(async (req, res) => {
++  const session = readSession(req);
++  if (!session) throw httpError(401, "Oturum bulunamadı.");
++  const profile = await sessionProfile(session.name, session.pin);
++  res.set("Cache-Control", "no-store").json({ data: {
++    token: issueSession(session.name, session.pin, session.deviceId),
++    name: session.name, profile, is_admin: await verifyAdminPin(session.pin)
++  } });
++}));
++
+ app.get("/api/items", asyncRoute(async (req, res) => {
+   const offset = parsePositiveLimit(req.query.offset, 0, 1_000_000);
+   const limit = parsePositiveLimit(req.query.limit, 1_000, 2_000);
+   const result = await pool.query(
+@@ -468,23 +564,33 @@
+ app.post("/api/rpc/:name", asyncRoute(async (req, res) => {
+   const definition = RPC_DEFINITIONS[req.params.name];
+   if (!definition) throw httpError(404, "RPC fonksiyonu bulunamadı.");
+ 
+-  if (req.params.name === "apply_depo_stock_movement" && Number(req.body?.p_amount) > 1) {
+-    const adminAllowed = await verifyAdminPin(req.body?.p_personnel_pin);
++  const session = readSession(req);
++  if (session) await sessionProfile(session.name, session.pin);
++  const params = { ...(req.body || {}) };
++  if (session) {
++    if (definition.params.includes("p_personnel_name")) params.p_personnel_name = session.name;
++    if (definition.params.includes("p_personnel_pin")) params.p_personnel_pin = session.pin;
++    if (definition.params.includes("p_device_id")) params.p_device_id = session.deviceId;
++    if (definition.params.includes("p_admin_pin")) params.p_admin_pin = session.pin;
++  }
++
++  if (req.params.name === "apply_depo_stock_movement" && Number(params.p_amount) > 1) {
++    const adminAllowed = await verifyAdminPin(params.p_personnel_pin);
+     if (!adminAllowed) {
+       const bulkPermission = await pool.query(
+         "SELECT public.get_depo_bulk_stock_permission($1::text,$2::text) AS allowed",
+-        [req.body?.p_personnel_name, req.body?.p_personnel_pin]
++        [params.p_personnel_name, params.p_personnel_pin]
+       );
+       if (bulkPermission.rows[0]?.allowed !== true) {
+         throw httpError(403, "Bu personelde toplu stok giriş/çıkış yetkisi kapalıdır.");
+       }
+     }
+   }
+ 
+   const values = definition.params.map((parameter) => (
+-    Object.prototype.hasOwnProperty.call(req.body || {}, parameter) ? req.body[parameter] : null
++    Object.prototype.hasOwnProperty.call(params, parameter) ? params[parameter] : null
+   ));
+   const result = await pool.query(definition.sql, values);
+   res.json({ data: definition.returnsRows ? result.rows : result.rows[0]?.result });
+ }));
