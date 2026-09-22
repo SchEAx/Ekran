@@ -1,4 +1,4 @@
-const APP_VERSION = "2.15.0";
+const APP_VERSION = "2.15.1";
 const API_BASE_URL = "https://api.scheax.com.tr/ekran1/api";
 const MEDIA_BASE_URL = "https://api.scheax.com.tr/ekran1/media";
 
@@ -144,7 +144,7 @@ function setLanguage(language, persist = true){
 
   updateProfileUi();
   if(allItems.length){
-    renderList(allItems);
+    renderList(filteredStockListItems());
     renderOperationList();
     renderBoxes();
   }
@@ -171,9 +171,12 @@ function isFixedAdminPersonnel(){
 
 function refreshPermissionSensitiveUi(){
   if(!allItems.length) return;
+  renderList(filteredStockListItems());
+}
+
+function filteredStockListItems(){
   const query = normalize($("searchInput")?.value?.trim() || "");
-  const list = query ? allItems.filter(item => itemSearchText(item).includes(query)) : allItems;
-  renderList(list);
+  return query ? allItems.filter(item => itemSearchText(item).includes(query)) : allItems;
 }
 
 function updateProfileUi(){
@@ -611,20 +614,22 @@ async function fetchAllItems(){
 }
 
 async function loadAll(){
-  if(!apiClient) return;
+  if(!apiClient) return false;
   try{
     allItems = await fetchAllItems();
   }catch(error){
     toast("Stok çekilemedi: " + error.message);
-    return;
+    return false;
   }
 
   rebuildBarcodeStockSummaryMap();
   syncDynamicProductTypes();
-  renderList(allItems);
+  // Veri yenilenirken açık stok aramasını koru; ürünün güncel adedi ekranda kalsın.
+  renderList(filteredStockListItems());
   renderOperationList();
   renderStats();
   renderBoxes();
+  return true;
 }
 
 function renderStats(){
@@ -1497,10 +1502,8 @@ function doSearch(){
     toast("Stok Listesi sekmesi için yetkin bulunmuyor.");
     return;
   }
-  const query = normalize($("searchInput").value.trim());
-  const list = query ? allItems.filter(item => itemSearchText(item).includes(query)) : allItems;
   switchTab("liste");
-  renderList(list);
+  renderList(filteredStockListItems());
 }
 
 function openEditModal(id){
@@ -1903,9 +1906,16 @@ async function confirmBarcodeStockOperation(direction){
   try{
     const locationNote = `${barcodeLocationLabel(item)} • Barkod ile hızlı stok işlemi`;
     await applyStockMovement(item, direction, amount, variant, locationNote);
-    closeBarcodeActionModal();
     toast(direction > 0 ? t("savedIn", { amount, name:currentPersonnelName }) : t("savedOut", { amount, name:currentPersonnelName }));
-    await loadAll();
+    if(await loadAll()){
+      const matches = allItems
+        .filter(row => cleanBarcode(row.barcode) === cleanBarcode(item.barcode))
+        .sort((a, b) => String(a.box_no || "").localeCompare(String(b.box_no || ""), "tr", {numeric:true}) || String(a.shelf_location || "").localeCompare(String(b.shelf_location || ""), "tr", {numeric:true}));
+      if(matches.length > 1) renderBarcodeLocations(matches);
+      if(findItem(item.id)) selectBarcodeLocation(item.id);
+    }else{
+      setBarcodeActionEnabled(false);
+    }
   }catch(error){
     toast(error.message);
   }finally{
