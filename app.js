@@ -1,4 +1,14 @@
-const APP_VERSION = "2.15.1";
+const APP_VERSION = "2.15.3";
+const SESSION_STORAGE_KEY = "ekran_secure_session_v1";
+
+function savedSessionToken(){
+  return localStorage.getItem(SESSION_STORAGE_KEY) || "";
+}
+
+function saveSessionToken(token){
+  if(token) localStorage.setItem(SESSION_STORAGE_KEY, token);
+  else localStorage.removeItem(SESSION_STORAGE_KEY);
+}
 const API_BASE_URL = "https://api.scheax.com.tr/ekran1/api";
 const MEDIA_BASE_URL = "https://api.scheax.com.tr/ekran1/media";
 
@@ -204,7 +214,7 @@ function updateProfileUi(){
 
 
 async function loadCurrentBulkStockPermission(name = currentPersonnelName, pin = currentPersonnelPin){
-  if(!apiClient || !name || !pin || isFixedAdminName(name)) return isFixedAdminName(name);
+  if(!apiClient || !name || (!pin && !savedSessionToken()) || isFixedAdminName(name)) return isFixedAdminName(name);
   try{
     const { data, error } = await apiClient.rpc("get_depo_bulk_stock_permission", {
       p_personnel_name:name,
@@ -284,6 +294,7 @@ async function savePersonnelProfile(){
     // Personel değişirken önceki admin oturumunu taşıma.
     adminUnlocked = false;
     adminPinSession = "";
+    saveSessionToken("");
     const loggedIn = await syncPersonnelProfile(name, pin);
     if(!loggedIn) return;
     currentPersonnelName = name;
@@ -291,6 +302,17 @@ async function savePersonnelProfile(){
     localStorage.setItem("koli_personnel_name", name);
     $("personnelModal").classList.add("hidden");
     await syncFixedAdminState(true);
+    const session = await apiClient.request("/session", {
+      method:"POST",
+      body:{ personnel_name:name, personnel_pin:pin, device_id:currentDeviceId }
+    });
+    if(!session.error && session.data?.token){
+      saveSessionToken(session.data.token);
+      currentPersonnelPin = "";
+      if(adminUnlocked) adminPinSession = "session";
+    }else{
+      console.warn("Kalıcı oturum açılamadı:", session.error?.message || "Oturum yanıtı yok");
+    }
     updateProfileUi();
     switchTab("islem");
     toast(adminUnlocked ? `${name} sabit admin olarak giriş yaptı.` : t("loginWelcome", { name }));
@@ -304,7 +326,7 @@ function initPersonnelProfile(){
   currentDeviceId = localStorage.getItem("koli_device_id") || createDeviceId();
   localStorage.setItem("koli_device_id", currentDeviceId);
   updateProfileUi();
-  openPersonnelModal(false);
+  if(!savedSessionToken()) openPersonnelModal(false);
 }
 
 async function syncPersonnelProfile(name = currentPersonnelName, pin = currentPersonnelPin){
@@ -339,7 +361,7 @@ async function syncPersonnelProfile(name = currentPersonnelName, pin = currentPe
 }
 
 async function ensurePersonnelActive(){
-  if(!currentPersonnelName || !currentPersonnelPin){
+  if(!currentPersonnelName || (!currentPersonnelPin && !savedSessionToken())){
     openPersonnelModal(false);
     throw new Error("Personel adı ve PIN ile giriş yapmalısın.");
   }
@@ -347,8 +369,14 @@ async function ensurePersonnelActive(){
     p_personnel_name:currentPersonnelName,
     p_personnel_pin:currentPersonnelPin
   });
+  if(error && error.status !== 401 && error.status !== 403){
+    throw new Error(error.message || "Personel doğrulanamadı.");
+  }
   if(error || data !== true){
     currentPersonnelPin = "";
+    saveSessionToken("");
+    adminUnlocked = false;
+    adminPinSession = "";
     openPersonnelModal(false);
     throw new Error("Personel hesabı pasif, PIN yanlış veya oturum geçersiz.");
   }
@@ -487,10 +515,36 @@ async function initApi(){
       personnelName:currentPersonnelName,
       personnelPin:currentPersonnelPin,
       deviceId:currentDeviceId,
-      adminPin:adminPinSession
+      adminPin:adminPinSession,
+      sessionToken:savedSessionToken()
     })
   });
-  if(currentPersonnelName && currentPersonnelPin) await syncPersonnelProfile();
+  if(savedSessionToken()){
+    const { data, error } = await apiClient.request("/session");
+    if(!error && data?.token && data?.name){
+      saveSessionToken(data.token);
+      currentPersonnelName = data.name;
+      localStorage.setItem("koli_personnel_name", data.name);
+      currentAllowedTabs = new Set([
+        ...DEFAULT_PERSONNEL_TABS,
+        ...(Array.isArray(data.profile?.allowed_tabs) ? data.profile.allowed_tabs : [])
+          .filter(tab => GRANTABLE_TABS.includes(tab))
+      ]);
+      if(await loadCurrentBulkStockPermission(data.name, "")) currentAllowedTabs.add(BULK_STOCK_PERMISSION);
+      adminUnlocked = isFixedAdminPersonnel() && data.is_admin === true;
+      adminPinSession = adminUnlocked ? "session" : "";
+      $("personnelModal").classList.add("hidden");
+      updateProfileUi();
+    }else if(!error || [401, 403, 404, 503].includes(error.status)){
+      saveSessionToken("");
+      currentPersonnelPin = "";
+      adminUnlocked = false;
+      adminPinSession = "";
+      openPersonnelModal(false);
+    }else{
+      console.warn("Oturum bağlantısı geçici olarak kurulamadı:", error.message);
+    }
+  }
   await loadAll();
 }
 
@@ -1557,7 +1611,7 @@ function closeEditModal(){
 }
 
 async function applyStockMovement(item, direction, amount, variant, note = ""){
-  if(!currentPersonnelName || !currentPersonnelPin) throw new Error("Önce personel adı ve PIN ile giriş yap.");
+  if(!currentPersonnelName || (!currentPersonnelPin && !savedSessionToken())) throw new Error("Önce personel adı ve PIN ile giriş yap.");
   if(!Number.isInteger(Number(amount)) || Number(amount) <= 0) throw new Error("Stok adedi 1 veya daha büyük tam sayı olmalı.");
   if(!canUseBulkStock() && Number(amount) !== 1){
     throw new Error("Bu personelde Toplu Stok Giriş / Çıkış yetkisi kapalıdır. Her işlem 1 adet olarak kaydedilir.");
@@ -2679,30 +2733,45 @@ function setupEvents(){
     }
   });
 
-  $("updateBtn").addEventListener("click", async () => {
-    if("caches" in window){
-      const keys = await caches.keys();
-      await Promise.all(keys.map(key => caches.delete(key)));
-    }
-    localStorage.setItem("last_seen_version", APP_VERSION);
-    location.reload();
-  });
-}
-
-function checkUpdateButton(){
-  const seen = localStorage.getItem("last_seen_version");
-  if(seen !== APP_VERSION) $("updateBtn").classList.remove("hidden");
 }
 
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("sw.js").catch(() => {});
+  navigator.serviceWorker.register("sw.js", { updateViaCache:"none" }).then(registration => {
+    registration.update().catch(() => {});
+    document.addEventListener("visibilitychange", () => {
+      if(!document.hidden) registration.update().catch(() => {});
+    });
+  }).catch(() => {});
 }
+
+window.addEventListener("online", () => {
+  if(savedSessionToken() && !currentPersonnelPin) initApi().catch(console.warn);
+});
 
 applyTheme(localStorage.getItem("koli_theme") || "midnight", false);
 setLanguage(currentLanguage, false);
-initPersonnelProfile();
-setupEvents();
-syncAdminStockUi();
-setReportPeriod("today");
-initApi();
-checkUpdateButton();
+async function startEkranWithHub(){
+  // Only the screen API exchanges a central JWT for an Ekran session.
+  const hubToken = await window.GarageHubSSO?.waitForToken();
+  if (hubToken) {
+    const deviceId = localStorage.getItem("koli_device_id") || createDeviceId();
+    localStorage.setItem("koli_device_id", deviceId);
+    try {
+      const response = await fetch(`${API_BASE_URL}/hub/session`, {
+        method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${hubToken}`},
+        body:JSON.stringify({device_id:deviceId}),cache:"no-store"
+      });
+      const payload = await response.json();
+      if (response.ok && payload.data?.token) {
+        saveSessionToken(payload.data.token);
+        localStorage.setItem("koli_personnel_name",payload.data.name);
+      }
+    } catch(error) { console.warn("Panel oturumu alınamadı:",error); }
+  }
+  initPersonnelProfile();
+  setupEvents();
+  syncAdminStockUi();
+  setReportPeriod("today");
+  await initApi();
+}
+startEkranWithHub();

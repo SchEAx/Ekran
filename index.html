@@ -6,7 +6,7 @@
   <title>Ekran &amp; Çerçeve</title>
   <meta name="theme-color" content="#111827" />
   <link rel="manifest" href="manifest.json" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=2.15.3" />
   <script>
     document.documentElement.dataset.theme = localStorage.getItem("koli_theme") || "midnight";
     document.documentElement.lang = localStorage.getItem("koli_language") === "ar" ? "ar" : "tr";
@@ -14,7 +14,7 @@
   </script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.2.1/umd/zxing-browser.min.js"></script>
-  <script src="api-client.js"></script>
+  <script src="api-client.js?v=2.15.3"></script>
 </head>
 <body>
   <header class="topbar">
@@ -443,6 +443,7 @@
       <p id="scannerStatus" class="muted" data-i18n="cameraPreparing">Kamera hazırlanıyor...</p>
     </div>
   </div>
-  <script src="app.js"></script>
+  <script src="hub-sso.js?v=2.15.3"></script>
+  <script src="app.js?v=2.15.3"></script>
 </body>
 </html>

@@ -1,8 +1,8 @@
 (function createEkranApiAdapter(global) {
   "use strict";
 
-  function errorResult(message) {
-    return { data: null, error: { message: String(message || "Bilinmeyen API hatası") } };
+  function errorResult(message, status = null) {
+    return { data: null, error: { message: String(message || "Bilinmeyen API hatası"), status } };
   }
 
   function encodeHeader(value) {
@@ -166,11 +166,13 @@
 
     credentialHeaders() {
       const credentials = this.getCredentials() || {};
+      const session = String(credentials.sessionToken || "");
       return {
         "X-Personnel-Name": encodeHeader(credentials.personnelName),
-        "X-Personnel-Pin": String(credentials.personnelPin || ""),
+        "X-Personnel-Pin": session ? "" : String(credentials.personnelPin || ""),
         "X-Device-Id": encodeHeader(credentials.deviceId),
-        "X-Admin-Pin": String(credentials.adminPin || ""),
+        "X-Admin-Pin": session ? "" : String(credentials.adminPin || ""),
+        "X-Ekran-Session": session,
       };
     }
 
@@ -185,7 +187,7 @@
           body: options.body === undefined ? undefined : JSON.stringify(options.body),
         });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok) return errorResult(payload?.error?.message || `API hatası (${response.status})`);
+        if (!response.ok) return errorResult(payload?.error?.message || `API hatası (${response.status})`, response.status);
         return { data: payload.data ?? null, error: null };
       } catch (error) {
         return errorResult(`API bağlantısı kurulamadı: ${error.message}`);
@@ -221,4 +223,3 @@
     return new EkranApiClient(options || {});
   };
 })(window);
-

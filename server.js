@@ -61,6 +61,7 @@ app.use(cors({
     "X-Device-Id",
     "X-Admin-Pin",
     "X-Ekran-Session",
+    "Authorization",
   ],
   maxAge: 86_400,
 }));
@@ -402,6 +403,32 @@ async function sessionProfile(name, pin) {
   );
   return { allowed_tabs: permission.rows[0]?.allowed_tabs || [] };
 }
+
+// Panel JWT is validated by the panel service. PINs remain on the server and
+// the browser only receives Ekran's existing encrypted, device-bound session.
+app.post("/api/hub/session", rateLimit({
+  windowMs:15*60*1000,limit:30,standardHeaders:"draft-8",legacyHeaders:false,
+}), asyncRoute(async (req,res) => {
+  requireSessionKey();
+  const hubUrl = process.env.HUB_VERIFY_URL;
+  if (!/^http:\/\/127\.0\.0\.1:3003\/hub\/api\/session$/.test(hubUrl || "")) throw httpError(503,"Panel doğrulaması yapılandırılmadı.");
+  const bearer = /^Bearer (\S+)$/i.exec(req.get("Authorization") || "");
+  const deviceId = String(req.body?.device_id || "").trim();
+  if (!bearer || bearer[1].length > 4096 || !deviceId || deviceId.length > 200) throw httpError(401,"Panel oturumu geçersiz.");
+  const verification = await fetch(hubUrl, {headers:{Authorization:`Bearer ${bearer[1]}`},signal:AbortSignal.timeout(8000)});
+  if (!verification.ok) throw httpError(401,"Panel oturumu geçersiz.");
+  const {user} = await verification.json();
+  let users;
+  try { users = JSON.parse(process.env.EKRAN_HUB_USERS_JSON || "{}"); }
+  catch { throw httpError(503,"Ekran panel kullanıcı eşlemesi geçersiz."); }
+  const mapping = users[String(user?.username || "").toLocaleLowerCase("tr-TR")];
+  if (!mapping || typeof mapping.name !== "string" || typeof mapping.pin !== "string") throw httpError(403,"Bu hesabın Ekran yetkisi yok.");
+  const profile = await sessionProfile(mapping.name,mapping.pin);
+  res.set("Cache-Control","no-store").json({data:{
+    token:issueSession(mapping.name,mapping.pin,deviceId),name:mapping.name,profile,
+    is_admin:await verifyAdminPin(mapping.pin)
+  }});
+}));
 
 app.post("/api/session", rateLimit({
   windowMs: 15 * 60 * 1000,
